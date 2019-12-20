@@ -12,7 +12,11 @@ try:
     glapi = GreenLight(os.environ['GL_STAGE'], os.environ['GL_APIKEY'])
     if glapi.profile:
         print("GreenLight API '" + glapi.stage + "' is alive and authenticated successfully.")
-        print("Your apikey is associated with: " + json.dumps(glapi.profile))
+        print("Your apikey is associated with: ")
+        print(f"  role={glapi.profile['role']}")
+        print(f"  admin={glapi.admin['name']}")
+        if (glapi.client and 'name' in glapi.client): 
+            print(f"  client={glapi.client['name']}") 
     else:
         print("GreenLight object initialized, but its role is empty.  The user associated with your apikey may be misconfigured.  Contact support.")
 

@@ -4,6 +4,6 @@ def get_base_url(stage):
         'production': 'https://api.greenlight.ai/beta-ext'
     }
 
-    if (stage in URLS): return URLS[stage]
+    if stage in URLS: return URLS[stage]
     raise KeyError('Stage' + stage + 'not recognized')
 
