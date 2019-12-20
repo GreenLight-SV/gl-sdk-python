@@ -3,7 +3,7 @@ GreenLight API examples - Python3
 
 Usage:
  - Configure environment variables 
-   - GL_STAGE=staging or GL_STAGE=production
+   - GL_STAGE=staging-ext or GL_STAGE=site-ext
    - GL_APIKEY={your secret key}
  - To verify that it works, run gl-sample.py
 
