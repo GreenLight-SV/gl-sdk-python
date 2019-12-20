@@ -34,23 +34,28 @@ class GreenLight():
         path_relative: str, 
         method: str = 'GET', 
         queryparams: dict = {}, 
-        expected_status: int = 200, 
+        expected_status: int = 0, 
         body: dict = {}
     ):
         url = self.get_api_url(path_relative, queryparams)
         headers = {'x-api-key': self.apikey}
         method = method.upper()
 
-        if (method == 'GET'):
+        if method == 'GET':
+            if expected_status == 0: expected_status = 200
             resp = requests.get(url, headers=headers)
-        elif (method == 'POST'):
+        elif method == 'POST':
+            if expected_status == 0: expected_status = 201
             resp = requests.post(url, json=body, headers=headers)
+        elif method == 'DELETE':
+            if expected_status == 0: expected_status = 204
+            resp = requests.delete(url, headers=headers)
         else:
             raise ValueError(f'Unsupported http method {method}')
 
         if (resp.status_code != expected_status):
             raise ValueError(f'Invalid status code {resp.status_code} returned from {method} {url}: {resp.text}')
-        return resp.json()
+        return resp.json() if resp.status_code != 204 else {}
 
     def get_api_hash(self):
         version_json = self.request('/version')
@@ -64,6 +69,11 @@ class GreenLight():
         queryparams = {'scope': scope} if scope else {}
         full_client = self.request(f'/client/{client_id}', queryparams=queryparams)
         return full_client
+
+    def delete_client(self, client_id):
+        resp = self.request(
+            f'/client/{client_id}', method='DELETE')
+        return resp
 
     def get_admin_clients(self):
         def client_fields(client):
@@ -100,7 +110,7 @@ class GreenLight():
             body['ext_id_scope'] = ext_id_scope or (self.profile['resource'] + ':' + self.profile['resource_id'])
             body['ext_id'] = ext_id
 
-        resp = self.request('/client', method='POST', body=body, expected_status=201)
+        resp = self.request('/client', method='POST', body=body)
         return resp
 
     def get_profile(self):
