@@ -60,14 +60,22 @@ class GreenLight():
         full_admin = self.request(f'/admin/{admin_id}')
         return full_admin
 
-    def get_client(self, client_id):
-        full_client = self.request(f'/client/{client_id}')
+    def get_client(self, client_id, scope = None):
+        queryparams = {'scope': scope} if scope else {}
+        full_client = self.request(f'/client/{client_id}', queryparams=queryparams)
         return full_client
 
     def get_admin_clients(self):
+        def client_fields(client):
+            return {
+                'name': client['name'],
+                'id': client['id'],
+                'ext_id_scope': client['ext_id_scope'],
+                'ext_id': client['ext_id']
+            }
         admin_id = self.admin['id']
         full_clients = self.request(f'/admin/{admin_id}/clients', queryparams={'status': 'current'})
-        clients = list(map(lambda client: {'id': client['id'], 'name': client['name']}, full_clients))
+        clients = list(map(client_fields, full_clients))
         return clients
 
     def create_client(
@@ -76,6 +84,8 @@ class GreenLight():
         countries = DEFAULT_COUNTRIES, 
         currencies = DEFAULT_CURRENCIES, 
         job_policies = DEFAULT_JOB_POLICIES,
+        ext_id_scope = None,
+        ext_id = None
     ):
         if (self.profile['resource'] != 'admin'):
             raise ValueError('Logged in user does not have sufficient permission to create client')
@@ -86,6 +96,10 @@ class GreenLight():
             'job_policies': job_policies,
             'admin_id': self.admin['id']
         }
+        if ext_id:
+            body['ext_id_scope'] = ext_id_scope or (self.profile['resource'] + ':' + self.profile['resource_id'])
+            body['ext_id'] = ext_id
+
         resp = self.request('/client', method='POST', body=body, expected_status=201)
         return resp
 

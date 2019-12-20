@@ -1,6 +1,7 @@
 """
     Verify that GreenLight api can authenticate with provided apikey.
     This example requires environment variables GL_STAGE and GL_APIKEY to be set.
+    An apikey user with admin or client privileges can run this example.
 """
 
 import json

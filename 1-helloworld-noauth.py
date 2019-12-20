@@ -1,7 +1,7 @@
 """
     Verify that GreenLight api is alive for selected stage.
     This example requires environment variable GL_STAGE to be set.
-    It does not authenticate, so GL_APIKEY is ignored.
+    It does not authenticate, so GL_APIKEY is not required, and if present it is ignored.
 """
 
 import json
