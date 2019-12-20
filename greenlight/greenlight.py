@@ -4,12 +4,24 @@ from urllib.error import HTTPError
 import requests
 import json
 
+DEFAULT_COUNTRIES = {'US': 'active', 'GB': 'active'}
+DEFAULT_CURRENCIES = {'USD': 'active', 'GBP': 'active'}
+DEFAULT_JOB_POLICIES = {
+    'w2_only': False, 
+    'individual_po': False, 
+    'bg_check': False, 
+    'bg_check_type': 'n/a',
+    'drug_check': False
+}
+
 class GreenLight():
     """GreenLight API client"""
 
     def __init__(self, stage: str, apikey: str = ''):
         self.stage = stage
         self.apikey = apikey
+        self.admin = {}
+        self.client = {}
         if apikey: self.profile = self.get_profile()
     
     def get_api_url(self, path_relative: str, queryparams: dict):
@@ -17,24 +29,27 @@ class GreenLight():
         querystring = ('?' + urlencode(queryparams)) if queryparams else ''
         return url + querystring
 
-
     def request(
         self, 
         path_relative: str, 
         method: str = 'GET', 
         queryparams: dict = {}, 
-        authenticated: bool = False, 
         expected_status: int = 200, 
         body: dict = {}
     ):
         url = self.get_api_url(path_relative, queryparams)
         headers = {'x-api-key': self.apikey}
-        resp = requests.get(
-            url,
-            headers=headers
-        )
+        method = method.upper()
+
+        if (method == 'GET'):
+            resp = requests.get(url, headers=headers)
+        elif (method == 'POST'):
+            resp = requests.post(url, json=body, headers=headers)
+        else:
+            raise ValueError(f'Unsupported http method {method}')
+
         if (resp.status_code != expected_status):
-            raise ValueError(f'Invalid status code {resp.status_code} returned from {method} {url}')
+            raise ValueError(f'Invalid status code {resp.status_code} returned from {method} {url}: {resp.text}')
         return resp.json()
 
     def get_api_hash(self):
@@ -49,10 +64,35 @@ class GreenLight():
         full_client = self.request(f'/client/{client_id}')
         return full_client
 
+    def get_admin_clients(self):
+        admin_id = self.admin['id']
+        full_clients = self.request(f'/admin/{admin_id}/clients', queryparams={'status': 'current'})
+        clients = list(map(lambda client: {'id': client['id'], 'name': client['name']}, full_clients))
+        return clients
+
+    def create_client(
+        self, 
+        name, 
+        countries = DEFAULT_COUNTRIES, 
+        currencies = DEFAULT_CURRENCIES, 
+        job_policies = DEFAULT_JOB_POLICIES,
+    ):
+        if (self.profile['resource'] != 'admin'):
+            raise ValueError('Logged in user does not have sufficient permission to create client')
+        body = {
+            'name': name,
+            'countries': countries,
+            'currencies': currencies,
+            'job_policies': job_policies,
+            'admin_id': self.admin['id']
+        }
+        resp = self.request('/client', method='POST', body=body, expected_status=201)
+        return resp
+
     def get_profile(self):
         profiles_json = self.request('/profile')
         if (len(profiles_json) != 1):
-            raise ValueError('Your API user is misconfigured.  Please contact support.')
+            raise ValueError(f'Your API user is has {len(profiles_json)} profiles.  Please contact support.')
         full_profile = profiles_json[0]
         profile = {
             'role': full_profile['role'],
