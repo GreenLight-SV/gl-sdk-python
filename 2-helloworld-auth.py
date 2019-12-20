@@ -20,5 +20,7 @@ try:
     else:
         print("GreenLight object initialized, but its role is empty.  The user associated with your apikey may be misconfigured.  Contact support.")
 
-except (KeyError, ValueError):
+except (KeyError, ValueError) as err:
     print("GreenLight object failed to initialize.  Are environment variables GL_STAGE and GL_APIKEY set correctly?")
+    print("Error code was:", err)
+
