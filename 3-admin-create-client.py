@@ -1,23 +1,19 @@
 """
     Create a new client.
     This example requires environment variables GL_STAGE and GL_APIKEY to be set.
-    Only a apikey user with admin privileges can run this example.
+
+    As client: you CANNOT run this example, it is for admin roles only.
+    As admin: you can run this example.
 """
 
-import json
-import os
-
+import common
 from faker import Faker
 fake = Faker()
 
-from greenlight import GreenLight
-
-try:
-    glapi = GreenLight(os.environ['GL_STAGE'], os.environ['GL_APIKEY'])
-except ValueError as err:
-    print("GreenLight object failed to initialize.  Are environment variables GL_STAGE and GL_APIKEY set correctly?")
-    print("Error code was:", err)
-    quit()
+from greenlight import GreenLight, get_glapi_from_env
+glapi = get_glapi_from_env()
+if glapi.role_type() != "admin":
+    raise ValueError('This example can only be run with admin credentials')
 
 new_client_name = fake.company()
 your_client_id = fake.uuid4()
@@ -37,5 +33,5 @@ resp = glapi.create_client(
     ext_id=your_client_id         # your unique identifier for this client
 )
 
-print(json.dumps(resp, indent=2))
+common.jsonprint(resp)
 

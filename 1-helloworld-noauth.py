@@ -4,9 +4,7 @@
     It does not authenticate, so GL_APIKEY is not required, and if present it is ignored.
 """
 
-import json
 import os
-
 from greenlight import GreenLight
 
 try:

@@ -1,1 +1,1 @@
-from .greenlight import GreenLight
+from .greenlight import GreenLight, get_glapi_from_env

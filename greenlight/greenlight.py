@@ -1,6 +1,7 @@
 from .common import get_base_url
 from urllib.parse import urlencode
 from urllib.error import HTTPError
+import os
 import requests
 import json
 
@@ -14,6 +15,16 @@ DEFAULT_JOB_POLICIES = {
     'drug_check': False
 }
 
+def get_glapi_from_env():
+    try:
+        glapi = GreenLight(os.environ['GL_STAGE'], os.environ['GL_APIKEY'])
+        return glapi
+
+    except (KeyError, ValueError) as err:
+        print("GreenLight object failed to initialize.  Are environment variables GL_STAGE and GL_APIKEY set correctly?")
+        print("Error code was:", err)
+        quit()
+
 class GreenLight():
     """GreenLight API client"""
 
@@ -23,6 +34,12 @@ class GreenLight():
         self.admin = {}
         self.client = {}
         if apikey: self.profile = self.get_profile()
+
+    def role_type(self):
+        role = self.profile['role']
+        if (role[0:2] == 'gl'): return "admin"
+        if (role[0:2] == 'cl'): return "client"
+        return "unknown"
     
     def get_api_url(self, path_relative: str, queryparams: dict):
         url = get_base_url(self.stage).strip('/') + '/' + path_relative.strip('/')
