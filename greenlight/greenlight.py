@@ -33,7 +33,7 @@ class GreenLight():
         self.apikey = apikey
         self.admin = {}
         self.client = {}
-        if apikey: self.profile = self.get_profile()
+        if apikey: self.profile = self.__get_profile()
 
     def role_type(self):
         role = self.profile['role']
@@ -47,58 +47,22 @@ class GreenLight():
         if self.role_type() == 'client':
             return self.client['ext_id_scope']
         return None
-    
-    def get_api_url(self, path_relative: str, queryparams: dict):
-        url = get_base_url(self.stage).strip('/') + '/' + path_relative.strip('/')
-        querystring = ('?' + urlencode(queryparams)) if queryparams else ''
-        return url + querystring
-
-    def request(
-        self, 
-        path_relative: str, 
-        method: str = 'GET', 
-        queryparams: dict = {}, 
-        expected_status: int = 0, 
-        body: dict = {}
-    ):
-        url = self.get_api_url(path_relative, queryparams)
-        headers = {'x-api-key': self.apikey}
-        method = method.upper()
-
-        if ('ext_id' in body) and not ('ext_id_scope' in body and body['ext_id_scope']):
-            body['ext_id_scope'] = self.scope()
-
-        if method == 'GET':
-            if expected_status == 0: expected_status = 200
-            resp = requests.get(url, headers=headers)
-        elif method == 'POST':
-            if expected_status == 0: expected_status = 201
-            resp = requests.post(url, json=body, headers=headers)
-        elif method == 'DELETE':
-            if expected_status == 0: expected_status = 204
-            resp = requests.delete(url, headers=headers)
-        else:
-            raise ValueError(f'Unsupported http method {method}')
-
-        if (resp.status_code != expected_status):
-            raise ValueError(f'Invalid status code {resp.status_code} returned from {method} {url}: {resp.text}')
-        return resp.json() if resp.status_code != 204 else {}
 
     def get_api_hash(self):
-        version_json = self.request('/version')
+        version_json = self.__request('/version')
         return version_json['git_hash']
 
-    def get_admin(self, admin_id):
-        full_admin = self.request(f'/admin/{admin_id}')
+    def get_admin(self, id):
+        full_admin = self.__request(f'/admin/{id}')
         return full_admin
 
     def get_client(self, id, scope = None):
         queryparams = {'scope': scope} if scope else {}
-        full_client = self.request(f'/client/{id}', queryparams=queryparams)
+        full_client = self.__request(f'/client/{id}', queryparams=queryparams)
         return full_client
 
     def delete_client(self, client_id):
-        resp = self.request(
+        resp = self.__request(
             f'/client/{client_id}', method='DELETE')
         return resp
 
@@ -111,7 +75,7 @@ class GreenLight():
                 'ext_id': client['ext_id']
             }
         admin_id = self.admin['id']
-        full_clients = self.request(f'/admin/{admin_id}/clients', queryparams={'status': 'current'})
+        full_clients = self.__request(f'/admin/{admin_id}/clients', queryparams={'status': 'current'})
         clients = list(map(client_fields, full_clients))
         return clients
 
@@ -137,22 +101,59 @@ class GreenLight():
             body['ext_id_scope'] = ext_id_scope or (self.profile['resource'] + ':' + self.profile['resource_id'])
             body['ext_id'] = ext_id
 
-        resp = self.request('/client', method='POST', body=body)
+        resp = self.__request('/client', method='POST', body=body)
         return resp
 
     def create_project(self, project):
-        resp = self.request('/project', method='POST', body=project)
+        resp = self.__request('/project', method='POST', body=project)
         return resp
 
     def get_project(self, id, scope = None):
         queryparams = {'scope': scope} if scope else {}
-        full_project = self.request(f'/project/{id}', queryparams=queryparams)
+        full_project = self.__request(f'/project/{id}', queryparams=queryparams)
 
         # in future this will return only relevant fields; for now it returns everything
         return full_project
 
-    def get_profile(self):
-        profiles_json = self.request('/profile')
+    ## private methods
+    def __get_api_url(self, path_relative: str, queryparams: dict):
+        url = get_base_url(self.stage).strip('/') + '/' + path_relative.strip('/')
+        querystring = ('?' + urlencode(queryparams)) if queryparams else ''
+        return url + querystring
+
+    def __request(
+        self, 
+        path_relative: str, 
+        method: str = 'GET', 
+        queryparams: dict = {}, 
+        expected_status: int = 0, 
+        body: dict = {}
+    ):
+        url = self.__get_api_url(path_relative, queryparams)
+        headers = {'x-api-key': self.apikey}
+        method = method.upper()
+
+        if ('ext_id' in body) and not ('ext_id_scope' in body and body['ext_id_scope']):
+            body['ext_id_scope'] = self.scope()
+
+        if method == 'GET':
+            if expected_status == 0: expected_status = 200
+            resp = requests.get(url, headers=headers)
+        elif method == 'POST':
+            if expected_status == 0: expected_status = 201
+            resp = requests.post(url, json=body, headers=headers)
+        elif method == 'DELETE':
+            if expected_status == 0: expected_status = 204
+            resp = requests.delete(url, headers=headers)
+        else:
+            raise ValueError(f'Unsupported http method {method}')
+
+        if (resp.status_code != expected_status):
+            raise ValueError(f'Invalid status code {resp.status_code} returned from {method} {url}: {resp.text}')
+        return resp.json() if resp.status_code != 204 else {}
+
+    def __get_profile(self):
+        profiles_json = self.__request('/profile')
         if (len(profiles_json) != 1):
             raise ValueError(f'Your API user is has {len(profiles_json)} profiles.  Please contact support.')
         full_profile = profiles_json[0]
