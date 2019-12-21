@@ -10,27 +10,30 @@
     As admin: you can run this example.  Only in stage=staging though.
 """
 
+# setting up the example
 import common
+common.print_header(__file__)
 
+# real stuff starts here
 from greenlight import GreenLight, get_glapi_from_env
-glapi = get_glapi_from_env()
-if glapi.role_type() != "admin":
+greenlight = get_glapi_from_env()
+if greenlight.role_type() != 'admin':
     raise ValueError('This example can only be run with admin credentials')
 
-if glapi.stage == 'production':
-    raise EnvironmentError("Running this example in production is a Really Bad Idea.")
+if greenlight.stage == 'production' or greenlight.stage == 'beta' or greenlight.stage == 'site':
+    raise EnvironmentError('Running this example in production is a Really Bad Idea.')
 
-clients = glapi.get_admin_clients()
+clients = greenlight.get_admin_clients()
 if len(clients) == 0:
     print('There are no clients to delete.')
     quit()
     
 for client in clients:
     name = client['name']
-    print(f'Deleting client {name}')
-    glapi.delete_client(client['id'])
+    print(f"Deleting client '{name}'")
+    greenlight.delete_client(client['id'])
 
-clients_after = glapi.get_admin_clients()
+clients_after = greenlight.get_admin_clients()
 if len(clients_after) == 0:
     print('All clients successfully deleted.')
 else:

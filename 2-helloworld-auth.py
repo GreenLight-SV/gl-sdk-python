@@ -6,16 +6,21 @@
     As admin: you can run this example.
 """
 
-from greenlight import GreenLight, get_glapi_from_env
-glapi = get_glapi_from_env()
+# setting up the example
+import common
+common.print_header(__file__)
 
-if glapi.profile:
-    print("GreenLight API '" + glapi.stage + "' is alive and authenticated successfully.")
+# real stuff starts here
+from greenlight import GreenLight, get_glapi_from_env
+greenlight = get_glapi_from_env()
+
+if greenlight.profile:
+    print("GreenLight API '" + greenlight.stage + "' is alive and authenticated successfully.")
     print("Your apikey is associated with: ")
-    print(f"  role={glapi.profile['role']}")
-    print(f"  admin={glapi.admin['name']}")
-    if (glapi.client and 'name' in glapi.client): 
-        print(f"  client={glapi.client['name']}") 
+    print(f"  role={greenlight.profile['role']}")
+    print(f"  admin={greenlight.admin['name']}")
+    if (greenlight.client and 'name' in greenlight.client): 
+        print(f"  client={greenlight.client['name']}") 
 else:
     print("GreenLight object initialized, but its role is empty.  The user associated with your apikey may be misconfigured.  Contact support.")
 

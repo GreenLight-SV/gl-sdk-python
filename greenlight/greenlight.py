@@ -2,6 +2,7 @@ from .common import get_base_url
 from urllib.parse import urlencode
 from urllib.error import HTTPError
 import os
+import sys
 import requests
 import json
 
@@ -23,7 +24,7 @@ def get_glapi_from_env():
     except (KeyError, ValueError) as err:
         print("GreenLight object failed to initialize.  Are environment variables GL_STAGE and GL_APIKEY set correctly?")
         print("Error code was:", err)
-        quit()
+        sys.exit(1)
 
 class GreenLight():
     """GreenLight API client"""
@@ -61,9 +62,8 @@ class GreenLight():
         full_client = self.__request(f'/client/{id}', queryparams=queryparams)
         return full_client
 
-    def delete_client(self, client_id):
-        resp = self.__request(
-            f'/client/{client_id}', method='DELETE')
+    def delete_client(self, id):
+        resp = self.__request(f'/client/{id}', method='DELETE')
         return resp
 
     def get_admin_clients(self):
@@ -79,29 +79,13 @@ class GreenLight():
         clients = list(map(client_fields, full_clients))
         return clients
 
-    def create_client(
-        self, 
-        name, 
-        countries = DEFAULT_COUNTRIES, 
-        currencies = DEFAULT_CURRENCIES, 
-        job_policies = DEFAULT_JOB_POLICIES,
-        ext_id_scope = None,
-        ext_id = None
-    ):
+    def create_client(self, client): 
         if (self.role_type() != 'admin'):
             raise ValueError('Logged in user does not have sufficient permission to create client')
-        body = {
-            'name': name,
-            'countries': countries,
-            'currencies': currencies,
-            'job_policies': job_policies,
-            'admin_id': self.admin['id']
-        }
-        if ext_id:
-            body['ext_id_scope'] = ext_id_scope or (self.profile['resource'] + ':' + self.profile['resource_id'])
-            body['ext_id'] = ext_id
 
-        resp = self.__request('/client', method='POST', body=body)
+        client['admin_id'] = self.admin['id']
+
+        resp = self.__request('/client', method='POST', body=client)
         return resp
 
     def create_project(self, project):
@@ -149,13 +133,14 @@ class GreenLight():
             raise ValueError(f'Unsupported http method {method}')
 
         if (resp.status_code != expected_status):
-            raise ValueError(f'Invalid status code {resp.status_code} returned from {method} {url}: {resp.text}')
+            raise ValueError(f'Unexpected status code {resp.status_code} returned from {method} {url}: {resp.text}')
+
         return resp.json() if resp.status_code != 204 else {}
 
     def __get_profile(self):
         profiles_json = self.__request('/profile')
         if (len(profiles_json) != 1):
-            raise ValueError(f'Your API user is has {len(profiles_json)} profiles.  Please contact support.')
+            raise ValueError(f'Your API user has {len(profiles_json)} profiles, but should have exactly 1.  Please contact support.')
         full_profile = profiles_json[0]
         profile = {
             'role': full_profile['role'],
