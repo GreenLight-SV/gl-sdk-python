@@ -1,5 +1,7 @@
 """
-    A script to delete all clients; also shows how to delete a single client.
+    A script to delete all clients, to clean up the staging database if it gets too crowded.
+    This script will also be extended in future to delete projects and workers.
+    Also shows how to delete a single client, project, or worker.
     In general this is NOT RECOMMENDED.  
     But if you have created a lot of example clients for testing you may want to clean up.
     This example requires environment variables GL_STAGE and GL_APIKEY to be set.

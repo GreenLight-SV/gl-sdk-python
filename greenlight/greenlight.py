@@ -39,7 +39,14 @@ class GreenLight():
         role = self.profile['role']
         if (role[0:2] == 'gl'): return "admin"
         if (role[0:2] == 'cl'): return "client"
-        return "unknown"
+        return None
+
+    def scope(self):
+        if self.role_type() == 'admin':
+            return self.admin['ext_id_scope']
+        if self.role_type() == 'client':
+            return self.client['ext_id_scope']
+        return None
     
     def get_api_url(self, path_relative: str, queryparams: dict):
         url = get_base_url(self.stage).strip('/') + '/' + path_relative.strip('/')
@@ -57,6 +64,9 @@ class GreenLight():
         url = self.get_api_url(path_relative, queryparams)
         headers = {'x-api-key': self.apikey}
         method = method.upper()
+
+        if ('ext_id' in body) and not ('ext_id_scope' in body and body['ext_id_scope']):
+            body['ext_id_scope'] = self.scope()
 
         if method == 'GET':
             if expected_status == 0: expected_status = 200
@@ -82,9 +92,9 @@ class GreenLight():
         full_admin = self.request(f'/admin/{admin_id}')
         return full_admin
 
-    def get_client(self, client_id, scope = None):
+    def get_client(self, id, scope = None):
         queryparams = {'scope': scope} if scope else {}
-        full_client = self.request(f'/client/{client_id}', queryparams=queryparams)
+        full_client = self.request(f'/client/{id}', queryparams=queryparams)
         return full_client
 
     def delete_client(self, client_id):
@@ -114,7 +124,7 @@ class GreenLight():
         ext_id_scope = None,
         ext_id = None
     ):
-        if (self.profile['resource'] != 'admin'):
+        if (self.role_type() != 'admin'):
             raise ValueError('Logged in user does not have sufficient permission to create client')
         body = {
             'name': name,
@@ -129,6 +139,17 @@ class GreenLight():
 
         resp = self.request('/client', method='POST', body=body)
         return resp
+
+    def create_project(self, project):
+        resp = self.request('/project', method='POST', body=project)
+        return resp
+
+    def get_project(self, id, scope = None):
+        queryparams = {'scope': scope} if scope else {}
+        full_project = self.request(f'/project/{id}', queryparams=queryparams)
+
+        # in future this will return only relevant fields; for now it returns everything
+        return full_project
 
     def get_profile(self):
         profiles_json = self.request('/profile')

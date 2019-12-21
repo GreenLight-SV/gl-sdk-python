@@ -29,7 +29,7 @@ resp = glapi.create_client(
         # 'bg_check_type': 'basic'   # ignored if bg_check is False.  Legal values are 'basic' and 'enhanced'
         'drug_check': False          # set True if client policy requires drug screening for workers
     },
-    # ext_id_scope='NameOfPartner',  # your ext_id_scope (optional). if left blank, your greenlight id will be used.
+    ext_id_scope=glapi.scope(),
     ext_id=your_client_id         # your unique identifier for this client
 )
 

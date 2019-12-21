@@ -31,7 +31,7 @@ common.jsonprint(client)
 
 # c) fetch a client by your id
 your_client_id = clients[-1]['ext_id']       # for demonstration purposes
-your_id_scope = clients[-1]['ext_id_scope']  # for demonstration purposes
+your_id_scope = glapi.scope()
 client = glapi.get_client(your_client_id, scope=your_id_scope)
 print('\nExample c)')
 print(f'client for your id {your_client_id} is:')
