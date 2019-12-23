@@ -16,17 +16,17 @@ common.print_header(__file__)
 
 # real stuff starts here
 from greenlight import GreenLight, get_glapi_from_env
-glapi = get_glapi_from_env()
+greenlight = get_glapi_from_env()
 
 def select_client():
-    role_type = glapi.role_type()
+    role_type = greenlight.role_type()
 
     if role_type == 'client':
-        selected_client = glapi.client
+        selected_client = greenlight.client
         return selected_client
 
     if role_type == 'admin':
-        clients = glapi.get_admin_clients()
+        clients = greenlight.get_admin_clients()
         if len(clients) == 0:
             print("I can't add a worker without at least one client.  Add client(s) and try again.")
             quit()
@@ -42,23 +42,38 @@ client = select_client()
 client_name = client['name']
 print(f"  I. This worker will be invited for client='{client_name}'")
 
-# Act II: Determine what project (ie billing code) this assignment will bill to.
+# Act II: Determine what project (ie billing code) this assignment will be billed to.
 # When you create the job, it's required to have at least one GreenLight project id.
 # - In this example we are creating a new project.
 # - If you have a project already, and you know its GreenLight id, just use that.
 # - If you have a project already but don't know its GreenLight id, you can fetch it using get_project(your_id, your_scope).
 new_project = common.random_project(client)
-new_project_name = new_project['name']
-resp = glapi.create_project(new_project)
+resp = greenlight.create_project(new_project)
 
 # You don't need to fetch back the project using your identifier,
 # but we do it here just to show how it's done
 your_id = new_project['ext_id']
-your_scope = glapi.scope()
-project = glapi.get_project(id=your_id, scope=your_scope)
+your_scope = greenlight.scope()
+project = greenlight.get_project(id=your_id, scope=your_scope)
 project_name = project['name']
 project_id = project['id']
 print(f" II. Created new project '{project_name}' id={project_id}")
 
-## 
+## Act III. Create a position, including job title, job description, work location.
+position = common.random_position(client)
+title = position['title']
+print(f"III. Creating a position '{title}'")
+resp = greenlight.create_position(position)
+common.jsonprint(resp)
+
+## Act IV. Invite a worker to the position.
+worker = common.random_worker()
+name = worker['first_name'] + ' ' + worker['last_name']
+email = worker['email']
+print(f" IV. Inviting a worker '{title}' ({email})")
+resp = greenlight.invite_worker(position, worker)
+common.jsonprint(resp)
+
+
+
 

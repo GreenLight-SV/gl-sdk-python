@@ -12,3 +12,6 @@ def get_base_url(stage):
     if stage in URLS: return URLS[stage]
     raise KeyError(f'Stage {stage} not recognized')
 
+def format_date(date):
+    return date.strftime('%Y-%m-%d')
+

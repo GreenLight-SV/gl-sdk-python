@@ -1,4 +1,4 @@
-from .common import get_base_url
+from .common import get_base_url, format_date
 from urllib.parse import urlencode
 from urllib.error import HTTPError
 import os
@@ -91,6 +91,15 @@ class GreenLight():
     def create_project(self, project):
         resp = self.__request('/project', method='POST', body=project)
         return resp
+
+    def create_position(self, position):
+        position['start_date'] = format_date(position['start_date'])
+        if 'end_date' in position: position['end_date'] = format_date(position['end_date'])
+        resp = self.__request('/position', method='POST', body=position)
+        return resp
+
+    def invite_worker(self, position, worker):
+        return {}
 
     def get_project(self, id, scope = None):
         queryparams = {'scope': scope} if scope else {}
