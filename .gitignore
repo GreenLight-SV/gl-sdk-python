@@ -30,7 +30,10 @@ nosetests.xml
 # Translations
 *.mo
 
-.vscode
+# Mr Developer
+.mr.developer.cfg
+.project
+.pydevproject
 
 venv
 app.db
