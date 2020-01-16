@@ -1,4 +1,4 @@
-from .common import get_base_url, format_date
+from .common import get_base_url, format_date, jsonprint
 from urllib.parse import urlencode
 from urllib.error import HTTPError
 import os
@@ -53,14 +53,11 @@ class GreenLight():
         version_json = self.__request('/version')
         return version_json['git_hash']
 
-    def get_admin(self, id):
-        full_admin = self.__request(f'/admin/{id}')
-        return full_admin
-
-    def get_client(self, id, scope = None):
-        queryparams = {'scope': scope} if scope else {}
-        full_client = self.__request(f'/client/{id}', queryparams=queryparams)
-        return full_client
+    def get_position(self, id, scope = None): return self.__fetch_endpoint('position', id, scope)
+    def get_client(self, id, scope = None): return self.__fetch_endpoint('client', id, scope)
+    def get_admin(self, id, scope = None): return self.__fetch_endpoint('admin', id, scope)
+    def get_project(self, id, scope = None): return self.__fetch_endpoint('project', id, scope)
+    def get_job(self, id, scope = None): return self.__fetch_endpoint('job', id, scope)
 
     def delete_client(self, id):
         resp = self.__request(f'/client/{id}', method='DELETE')
@@ -95,20 +92,37 @@ class GreenLight():
     def create_position(self, position):
         position['start_date'] = format_date(position['start_date'])
         if 'end_date' in position: position['end_date'] = format_date(position['end_date'])
-        resp = self.__request('/position', method='POST', body=position)
-        return resp
+        resp_add = self.__request('/position', method='POST', body=position)
+        position_id = resp_add['id']
+        self.__request(f'/position/{position_id}/action/approve', method='POST', expected_status=200)
+        return resp_add
 
-    def invite_worker(self, position, worker):
-        return {}
+    def invite_worker(self, position, worker, pay_by_project, your_scope = None, your_job_id = None):
+        invite = {
+            'position_id': position['id'],
+            'start_date': position['start_date'],
+            'first_name': worker['first_name'],
+            'last_name': worker['last_name'],
+            'email': worker['email'],
+            'phone': worker['phone'],
+            'projects': pay_by_project
+        }
+        if 'end_date' in position: invite['end_date'] = position['end_date']
 
-    def get_project(self, id, scope = None):
-        queryparams = {'scope': scope} if scope else {}
-        full_project = self.__request(f'/project/{id}', queryparams=queryparams)
+        resp = self.__request('/job_invite', method='POST', body=invite)
+        gl_job_id = resp['id']
 
-        # in future this will return only relevant fields; for now it returns everything
-        return full_project
+        job = self.get_job(gl_job_id)
+        return job
 
     ## private methods
+    def __fetch_endpoint(self, endpoint, id, scope = None):
+        queryparams = {'scope': scope} if scope else {}
+        record = self.__request(f'/{endpoint}/{id}', queryparams=queryparams)
+
+        # in future this will return only relevant fields; for now it returns everything
+        return record   
+
     def __get_api_url(self, path_relative: str, queryparams: dict):
         url = get_base_url(self.stage).strip('/') + '/' + path_relative.strip('/')
         querystring = ('?' + urlencode(queryparams)) if queryparams else ''

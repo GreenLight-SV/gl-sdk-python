@@ -2,7 +2,7 @@ import json
 import os
 import datetime
 from faker import Faker
-fake = Faker()
+fake = Faker('en_US')
 
 DEFAULT_COUNTRIES = {'US': 'active', 'GB': 'active'}
 DEFAULT_CURRENCIES = {'USD': 'active', 'GBP': 'active'}
@@ -17,14 +17,9 @@ DEPARTMENTS = [
     'HR', 'R&D', 'Finance', 'Sales', 'Marketing', 'Operations'
 ]
 
-def jsonprint(x):
-    print(json.dumps(x, indent=2))
-
-def print_header(path):
-    scriptname = os.path.basename(path)
-    print("\n" + scriptname + "\n" + "-" * len(scriptname))
 
 
+# create fake data
 
 def random_client(admin):
     client = {
@@ -61,7 +56,6 @@ def random_position(client):
         month = (start_date.month + 6) % 12,
         year = start_date.year + (1 if (start_date.month > 5) else 0)
     )
-    your_id = fake.uuid4()  # replace with your unique position identifier
 
     return {
         'client_id': client['id'],
@@ -77,8 +71,58 @@ def random_position(client):
         'classify_client_pref': 'w2-only',
         'pay_type': pay_type,
         'rate_currency': 'USD',
-        'ext_id': your_id
+        'country': 'US',
     }
 
 def random_worker():
-    return {}
+    worker = {
+        'first_name': fake.first_name(),
+        'last_name': fake.last_name(),
+        'phone': '+16175551212' # ISO format
+    }
+    email = worker['first_name'] + worker ['last_name'] + '@' + 'contractmagician.com'
+    worker['email'] = email
+    return worker
+
+def random_payrate(project_id):
+    return {
+        'project_id': project_id, 
+        'rate_currency': 'USD', 
+        'rate': fake.random_int(25, 150)
+    }
+
+def random_your_id(): return fake.uuid4()
+
+# for printing to console
+#
+def jsonprint(x):
+    print(json.dumps(x, indent=2))
+
+def print_header(path):
+    scriptname = os.path.basename(path)
+    print("\n" + scriptname + "\n" + "-" * len(scriptname))
+
+def worker_to_string(worker):
+    name = worker['first_name'] + ' ' + worker['last_name']
+    email = worker['email']
+    phone = worker['phone']
+    return f"'{name}' ({email}) {phone}"
+
+def project_to_string(project):
+    project_name = project['name']
+    project_id = project['id']
+    return f"'{project_name}' id={project_id}"
+
+def position_to_string(position):
+    id = position['id']
+    title = position['title']
+    return f"'{title}' id={id}"
+
+def job_to_string(job):
+    id = job['id']
+    title = job['title']
+    return f"'{title}' id={id}"
+
+def client_to_string(client):
+    return client['name']
+

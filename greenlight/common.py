@@ -1,3 +1,5 @@
+import json
+
 def get_base_url(stage):
     URLS = {
         'staging': 'https://api.greenlight.ai/staging-ext',
@@ -14,4 +16,7 @@ def get_base_url(stage):
 
 def format_date(date):
     return date.strftime('%Y-%m-%d')
+
+def jsonprint(x):
+    print(json.dumps(x, indent=2))
 
