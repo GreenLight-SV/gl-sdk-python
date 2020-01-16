@@ -84,7 +84,6 @@ new_worker = common.random_worker()
 your_worker_id = common.random_your_id()
 new_worker['ext_id_scope'] = your_scope
 new_worker['ext_id'] = your_worker_id
-
 your_job_id = common.random_your_id()
 
 pay_by_project = [common.random_payrate(gl_project_id)]

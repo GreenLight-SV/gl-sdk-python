@@ -89,6 +89,11 @@ class GreenLight():
         resp = self.__request('/project', method='POST', body=project)
         return resp
 
+    def update_job(self, job):
+        id = job['id']
+        resp = self.__request(f'/job/{id}', method='PUT', body=job)
+        return resp
+
     def create_position(self, position):
         position['start_date'] = format_date(position['start_date'])
         if 'end_date' in position: position['end_date'] = format_date(position['end_date'])
@@ -112,7 +117,12 @@ class GreenLight():
         resp = self.__request('/job_invite', method='POST', body=invite)
         gl_job_id = resp['id']
 
+        # add ext_id into the job
         job = self.get_job(gl_job_id)
+        job['ext_id_scope'] = your_scope
+        job['ext_id'] = your_job_id
+        self.update_job(job)
+
         return job
 
     ## private methods
@@ -140,6 +150,8 @@ class GreenLight():
         headers = {'x-api-key': self.apikey}
         method = method.upper()
 
+        print(url, headers, method)
+
         if ('ext_id' in body) and not ('ext_id_scope' in body and body['ext_id_scope']):
             body['ext_id_scope'] = self.scope()
 
@@ -152,6 +164,9 @@ class GreenLight():
         elif method == 'DELETE':
             if expected_status == 0: expected_status = 204
             resp = requests.delete(url, headers=headers)
+        elif method == 'PUT':
+            if expected_status == 0: expected_status = 204
+            resp = requests.put(url, json=body, headers=headers)
         else:
             raise ValueError(f'Unsupported http method {method}')
 

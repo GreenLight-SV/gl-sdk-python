@@ -91,7 +91,7 @@ def random_payrate(project_id):
         'rate': fake.random_int(25, 150)
     }
 
-def random_your_id(): return fake.uuid4()
+def random_your_id(): return fake.uuid4()[:8]
 
 # for printing to console
 #
