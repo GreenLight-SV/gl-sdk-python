@@ -1,27 +1,27 @@
 """
     Verify that GreenLight api can authenticate with provided apikey.
     This example requires environment variables GL_STAGE and GL_APIKEY to be set.
-    An apikey user with admin or client privileges can run this example.
+
+    As client: you can run this example.
+    As admin: you can run this example.
 """
 
-import json
-import os
+# setting up the example
+import common
+common.print_header(__file__)
 
-from greenlight import GreenLight
+# real stuff starts here
+from greenlight import GreenLight, get_glapi_from_env
+greenlight = get_glapi_from_env()
 
-try:
-    glapi = GreenLight(os.environ['GL_STAGE'], os.environ['GL_APIKEY'])
-    if glapi.profile:
-        print("GreenLight API '" + glapi.stage + "' is alive and authenticated successfully.")
-        print("Your apikey is associated with: ")
-        print(f"  role={glapi.profile['role']}")
-        print(f"  admin={glapi.admin['name']}")
-        if (glapi.client and 'name' in glapi.client): 
-            print(f"  client={glapi.client['name']}") 
-    else:
-        print("GreenLight object initialized, but its role is empty.  The user associated with your apikey may be misconfigured.  Contact support.")
+if greenlight.profile:
+    print("GreenLight API '" + greenlight.stage + "' is alive and authenticated successfully.")
+    print("Your apikey is associated with: ")
+    print(f"  role={greenlight.profile['role']}")
+    print(f"  admin={greenlight.admin['name']}")
+    if (greenlight.client and 'name' in greenlight.client): 
+        print(f"  client={greenlight.client['name']}") 
+else:
+    print("GreenLight object initialized, but its role is empty.  The user associated with your apikey may be misconfigured.  Contact support.")
 
-except (KeyError, ValueError) as err:
-    print("GreenLight object failed to initialize.  Are environment variables GL_STAGE and GL_APIKEY set correctly?")
-    print("Error code was:", err)
 
