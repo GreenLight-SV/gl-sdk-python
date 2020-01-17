@@ -5,8 +5,9 @@ import os
 import sys
 import requests
 import json
+from datetime import date, timedelta
 
-DEBUG = False
+DEBUG = True
 
 DEFAULT_COUNTRIES = {'US': 'active', 'GB': 'active'}
 DEFAULT_CURRENCIES = {'USD': 'active', 'GBP': 'active'}
@@ -91,6 +92,10 @@ class GreenLight():
         jobs = list(map(job_fields, full_jobs))
         return jobs
 
+    def get_job_projects(self, job_id):
+        full_projects = self.__request(f'/job/{job_id}/projects')
+        return full_projects
+
     def create_client(self, client): 
         if (self.role_type() != 'admin'):
             raise ValueError('Logged in user does not have sufficient permission to create client')
@@ -117,7 +122,7 @@ class GreenLight():
         self.__request(f'/position/{position_id}/action/approve', method='POST', expected_status=200)
         return resp_add
 
-    def invite_worker(self, position, worker, pay_by_project, your_scope = None, your_job_id = None):
+    def invite_worker(self, position, worker, pay_by_project, your_job_id = None):
         invite = {
             'position_id': position['id'],
             'start_date': position['start_date'],
@@ -133,14 +138,65 @@ class GreenLight():
         gl_job_id = resp['id']
 
         # add ext_id into the job
-        job = self.get_job(gl_job_id)
-        job['ext_id_scope'] = your_scope
-        job['ext_id'] = your_job_id
-        self.update_job(job)
+        if your_job_id:
+            job = self.get_job(gl_job_id)
+            job['ext_id_scope'] = self.scope()
+            job['ext_id'] = your_job_id
+            self.update_job(job)
 
         return job
 
+    def create_timesheet_with_shifts(self, shifts, your_timesheet_id = None, approve=False):
+        period_ending = self.__calculate_period_ending(shifts)
+        job_id = shifts[0]['job_id']
+        timesheet_id = self.__create_timesheet(job_id, period_ending, your_timesheet_id)
+        for shift in shifts:
+            self.__add_shift_to_timesheet(shift, timesheet_id)
+        self.__submit_timesheet(timesheet_id)
+        if approve:
+            self.__approve_timesheet(timesheet_id)
+        return timesheet_id
+
     ## private methods
+    def __create_timesheet(self, job_id, period_ending, your_timesheet_id):
+        timesheet = {
+            'job_id': job_id,
+            'period_ending': period_ending
+        }
+        if your_timesheet_id:
+            timesheet['ext_id'] = your_timesheet_id
+            timesheet['ext_id_scope'] = self.scope()
+
+        print(timesheet)
+        return self.__request('/timesheet', method='POST', body=timesheet)['id']
+    
+    def __submit_timesheet(self, timesheet_id):
+        return self.__request(f'/timesheet/{timesheet_id}/action/submit', method='POST', expected_status=200)
+
+    def __approve_timesheet(self, timesheet_id):
+        return self.__request(f'/timesheet/{timesheet_id}/action/approve', method='POST', expected_status=200)
+
+    def __add_shift_to_timesheet(self, shift, timesheet_id):
+        shift['timesheet_id'] = timesheet_id
+        return self.__request('/shift', method='POST', body=shift)['id']
+
+    def __calculate_period_ending(self, shifts):
+        def first_sunday_on_or_after(dt):
+            days_to_go = 6 - dt.weekday()
+            if days_to_go:
+                dt += timedelta(days_to_go)
+            return dt
+
+        last_time_in = max([shift['time_in'] for shift in shifts])
+        last_date = date.fromisoformat(last_time_in[:10])
+        timezone_offset = last_time_in[-6:]
+        period_ending_date = first_sunday_on_or_after(last_date)
+
+        # This sample application does not handle DST, so we cheat and set period_ending
+        # to 10:59pm Sunday rather than 11:59.  That way it's still within the week when DST is active.
+        period_ending = period_ending_date.isoformat() + "T22:59:59" + timezone_offset
+        return period_ending
+
     def __fetch_endpoint(self, endpoint, id, scope = None, queryparams = {}):
         allparams = queryparams.copy()
         if scope: allparams['scope'] = scope

@@ -71,7 +71,7 @@ your_job_id = common.random_your_id()
 
 pay_by_project = [common.random_payrate(gl_project_id)]
 
-job = greenlight.invite_worker(position, new_worker, pay_by_project, your_scope, your_job_id)
+job = greenlight.invite_worker(position, new_worker, pay_by_project, your_job_id)
 print(" IV. Invited worker " + common.worker_to_string(new_worker) + " to job " + common.job_to_string(job))
 
 ## Act V. Poll for background check status of worker
