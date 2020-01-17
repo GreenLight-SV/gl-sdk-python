@@ -7,7 +7,7 @@ import requests
 import json
 from datetime import date, timedelta
 
-DEBUG = True
+VERBOSE = False
 
 DEFAULT_COUNTRIES = {'US': 'active', 'GB': 'active'}
 DEFAULT_CURRENCIES = {'USD': 'active', 'GBP': 'active'}
@@ -92,15 +92,34 @@ class GreenLight():
         jobs = list(map(job_fields, full_jobs))
         return jobs
 
+    def get_questions_for_client(self, position_id = None):
+        def question_fields(question):
+            return {
+                'title': question['title'],
+                'answer_type': question['answer_type'],
+                'help_text': question['help_text'],
+                'id': question['id']
+            }
+        admin_id = self.admin['id']
+        path = f'/question?form_type=job_classification_client&admin={admin_id}'
+        if position_id: path += f'&position={position_id}'
+        full_questions = self.__request(path)
+        questions = list(map(question_fields, full_questions))
+
+        return questions
+
     def get_job_projects(self, job_id):
         full_projects = self.__request(f'/job/{job_id}/projects')
         return full_projects
 
-    def create_client(self, client): 
+    def create_client(self, client, your_client_id): 
         if (self.role_type() != 'admin'):
             raise ValueError('Logged in user does not have sufficient permission to create client')
 
         client['admin_id'] = self.admin['id']
+        if your_client_id:
+            client['ext_id'] = your_client_id
+            client['ext_id_scope'] = self.scope()
 
         resp = self.__request('/client', method='POST', body=client)
         return resp
@@ -114,13 +133,22 @@ class GreenLight():
         resp = self.__request(f'/job/{id}', method='PUT', body=job)
         return resp
 
-    def create_position(self, position):
+    def create_position(self, position, your_position_id = None):
         position['start_date'] = format_date(position['start_date'])
         if 'end_date' in position: position['end_date'] = format_date(position['end_date'])
+        if your_position_id:
+            position['ext_id'] = your_position_id
+            position['ext_id_scope'] = self.scope()
         resp_add = self.__request('/position', method='POST', body=position)
         position_id = resp_add['id']
         self.__request(f'/position/{position_id}/action/approve', method='POST', expected_status=200)
         return resp_add
+
+    def add_position_answers(self, position, answers):
+        position['classify_client_answers'] = {'answers': answers}
+        position_id = position['id']
+        resp_put = self.__request(f'/position/{position_id}', method='PUT', body=position)
+        return resp_put
 
     def invite_worker(self, position, worker, pay_by_project, your_job_id = None):
         invite = {
@@ -167,7 +195,6 @@ class GreenLight():
             timesheet['ext_id'] = your_timesheet_id
             timesheet['ext_id_scope'] = self.scope()
 
-        print(timesheet)
         return self.__request('/timesheet', method='POST', body=timesheet)['id']
     
     def __submit_timesheet(self, timesheet_id):
@@ -222,7 +249,7 @@ class GreenLight():
         headers = {'x-api-key': self.apikey}
         method = method.upper()
 
-        if DEBUG: print(method, url)
+        if VERBOSE: print(method, url)
 
         if ('ext_id' in body) and not ('ext_id_scope' in body and body['ext_id_scope']):
             body['ext_id_scope'] = self.scope()

@@ -1,5 +1,6 @@
 """
-    Example of how to upload time, expenses, deliverables for a worker.
+    Example of how to upload time for an employee.
+    Typically this type of upload be run on Monday or early Tuesday for the week just ended.
     This example requires environment variables GL_STAGE and GL_APIKEY to be set.
     It also requires that there be at least one job in active state.
 
@@ -29,9 +30,15 @@ project = common.choose_existing_project(greenlight, job['id'])
 job_ext = greenlight.get_job_extended(job['id'])
 print(f"  I. Hours will be added for " + common.job_to_string(job_ext) + " project=" + common.project_to_string(project))
 
-# Act II: Create a timesheet with some shifts on it
+# Act II: Create a timesheet with some shifts on it, and leave it in "to-approve state"
+shifts = common.random_shifts(job['id'], project['id'])
+your_timesheet_id = common.random_your_id()
+timesheet_id = greenlight.create_timesheet_with_shifts(shifts, your_timesheet_id, approve=False)
+print(" II. Created timesheet " + timesheet_id + " with shifts - look for it in To Approve")
+
+# Act II: Create a timesheet with some shifts on it, and leave it in "to-approve state"
 shifts = common.random_shifts(job['id'], project['id'])
 your_timesheet_id = common.random_your_id()
 timesheet_id = greenlight.create_timesheet_with_shifts(shifts, your_timesheet_id, approve=True)
-print(" II. Created timesheet " + timesheet_id + " with shifts")
+print("III. Created timesheet " + timesheet_id + " with shifts and approved it - look for it in Approved")
 

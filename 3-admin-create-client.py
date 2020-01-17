@@ -17,7 +17,10 @@ if greenlight.role_type() != 'admin':
     raise ValueError('This example can only be run with admin credentials')
 
 new_client = common.random_client(greenlight.admin)
-resp = greenlight.create_client(new_client)
+your_client_id = common.random_your_id()
+gl_client_id = greenlight.create_client(new_client, your_client_id)['id']
 
-common.jsonprint(resp)
+# fetch back, just to show how it's done
+client = greenlight.get_client(gl_client_id)
+print("Created client " + common.client_to_string(client))
 

@@ -1,7 +1,7 @@
 """
     A script to invite a new worker for EoR, who will receive email invitation to onboard him/herself.
     This example sets client-specified information (pay rate, project, onsite/offsite, etc.) and pre-populates 
-    some worker-specified information (name, mailing address, phone, etc.).
+    some worker information (name, email, phone).
     It also creates a new project for the worker, though in reality you might re-use an existing project.
 
     This example requires environment variables GL_STAGE and GL_APIKEY to be set.
@@ -18,7 +18,7 @@ common.print_header(__file__)
 from greenlight import GreenLight, get_glapi_from_env
 greenlight = get_glapi_from_env()
     
-###### Invite a worker: in 5 acts ######
+###### Invite an employee worker: in 5 acts ######
 
 # You can reference any record using its native (greenlight) id value (field 'id'),
 # or you can reference it using your own id value that you store as 'ext_id' at creation time.
@@ -29,7 +29,7 @@ your_scope = greenlight.scope()
 
 # Act I: Decide what client the worker should be invited to
 client = common.choose_existing_client(greenlight)
-print(f"  I. This worker will be invited for client " + common.client_to_string(client))
+print(f"  I. This EE worker will be invited for client " + common.client_to_string(client))
 
 # Act II: Determine what project (ie billing code) this assignment will be billed to.
 # When you create the job, it's required to have at least one GreenLight project id.
@@ -49,13 +49,10 @@ project = greenlight.get_project(id=your_project_id, scope=your_scope)
 print(f" II. Created new project " + common.project_to_string(project))
 
 ## Act III. Create a position, including job title, job description, work location.
-new_position = common.random_position(client)
+new_position = common.random_position(client, 'w2-only')
 
 your_position_id = common.random_your_id()
-new_position['ext_id_scope'] = your_scope
-new_position['ext_id'] = your_position_id
-
-gl_position_id = greenlight.create_position(new_position)['id']
+gl_position_id = greenlight.create_position(new_position, your_position_id)['id']
 
 # Example of how you can fetch this position using native identifier
 position = greenlight.get_position(gl_position_id)

@@ -30,7 +30,6 @@ def random_client(admin):
         'countries': admin['countries'],   # change to subset if client is limited to certain countries
         'currencies': admin['currencies'], # change to subset if client is limited to certain currencies
         'job_policies': DEFAULT_JOB_POLICIES,
-        'ext_id': fake.uuid4()             # put your client identifier here
     }
     return client
 
@@ -48,7 +47,7 @@ def random_project(client):
         'ext_id': your_id
     }
 
-def random_position(client):
+def random_position(client, classify_client_pref):
     pay_type = 'h'      # h for hourly, s for flat rate or by deliverable
     title = fake.job()
     department = fake.word(ext_word_list = DEPARTMENTS)
@@ -70,8 +69,8 @@ def random_position(client):
         'work_location_type': 'offsite',        # onsite or offsite
         # 'work_location_onsite_id': xxxxx,     # address id; required if onsite
         'work_timezone': 'America/New_York',
-        # 'hm_id': xxxxx,
-        'classify_client_pref': 'w2-only',
+        # 'hm_id': xxxxx,                       # greenlight ID of the hiring manager (person who approves timesheets)
+        'classify_client_pref': classify_client_pref,
         'pay_type': pay_type,
         'rate_currency': 'USD',
         'country': 'US',
