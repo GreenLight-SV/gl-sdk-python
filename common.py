@@ -95,6 +95,19 @@ def random_payrate(project_id):
 
 def random_your_id(): return fake.uuid4()[:8]
 
+def choose_existing_client(greenlight):
+    role_type = greenlight.role_type()
+
+    if role_type == 'client':
+        return greenlight.client
+
+    if role_type == 'admin':
+        clients = greenlight.get_admin_clients()
+        if len(clients) == 0:
+            print("There are no clients.  Add a client and try again.")
+            quit()
+        return clients[0]
+
 def choose_existing_job(greenlight):
     role_type = greenlight.role_type()
 
