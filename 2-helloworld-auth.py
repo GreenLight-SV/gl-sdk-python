@@ -18,7 +18,7 @@ if greenlight.profile:
     print("GreenLight API '" + greenlight.stage + "' is alive and authenticated successfully.")
     print("Your apikey is associated with: ")
     print(f"  role={greenlight.profile['role']}")
-    print(f"  admin={greenlight.admin['name']}")
+    print(f"  admin={greenlight.admin['id']}")
     if (greenlight.client and 'name' in greenlight.client): 
         print(f"  client={greenlight.client['name']}") 
 else:

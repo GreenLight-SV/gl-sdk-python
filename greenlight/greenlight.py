@@ -5,6 +5,9 @@ import os
 import sys
 import requests
 import json
+from datetime import date, timedelta
+
+VERBOSE = False
 
 DEFAULT_COUNTRIES = {'US': 'active', 'GB': 'active'}
 DEFAULT_CURRENCIES = {'USD': 'active', 'GBP': 'active'}
@@ -58,6 +61,7 @@ class GreenLight():
     def get_admin(self, id, scope = None): return self.__fetch_endpoint('admin', id, scope)
     def get_project(self, id, scope = None): return self.__fetch_endpoint('project', id, scope)
     def get_job(self, id, scope = None): return self.__fetch_endpoint('job', id, scope)
+    def get_job_extended(self, id): return self.__fetch_endpoint('job', id, None, {'extended': 'true'})
 
     def delete_client(self, id):
         resp = self.__request(f'/client/{id}', method='DELETE')
@@ -76,11 +80,46 @@ class GreenLight():
         clients = list(map(client_fields, full_clients))
         return clients
 
-    def create_client(self, client): 
+    def get_client_active_jobs(self, client_id):
+        def job_fields(job):
+            return {
+                'title': job['title'],
+                'id': job['id'],
+                'ext_id_scope': job['ext_id_scope'],
+                'ext_id': job['ext_id']
+            }
+        full_jobs = self.__request(f'/client/{client_id}/jobs', queryparams={'status': 'active'})
+        jobs = list(map(job_fields, full_jobs))
+        return jobs
+
+    def get_questions_for_client(self, position_id = None):
+        def question_fields(question):
+            return {
+                'title': question['title'],
+                'answer_type': question['answer_type'],
+                'help_text': question['help_text'],
+                'id': question['id']
+            }
+        admin_id = self.admin['id']
+        path = f'/question?form_type=job_classification_client&admin={admin_id}'
+        if position_id: path += f'&position={position_id}'
+        full_questions = self.__request(path)
+        questions = list(map(question_fields, full_questions))
+
+        return questions
+
+    def get_job_projects(self, job_id):
+        full_projects = self.__request(f'/job/{job_id}/projects')
+        return full_projects
+
+    def create_client(self, client, your_client_id): 
         if (self.role_type() != 'admin'):
             raise ValueError('Logged in user does not have sufficient permission to create client')
 
         client['admin_id'] = self.admin['id']
+        if your_client_id:
+            client['ext_id'] = your_client_id
+            client['ext_id_scope'] = self.scope()
 
         resp = self.__request('/client', method='POST', body=client)
         return resp
@@ -94,15 +133,24 @@ class GreenLight():
         resp = self.__request(f'/job/{id}', method='PUT', body=job)
         return resp
 
-    def create_position(self, position):
+    def create_position(self, position, your_position_id = None):
         position['start_date'] = format_date(position['start_date'])
         if 'end_date' in position: position['end_date'] = format_date(position['end_date'])
+        if your_position_id:
+            position['ext_id'] = your_position_id
+            position['ext_id_scope'] = self.scope()
         resp_add = self.__request('/position', method='POST', body=position)
         position_id = resp_add['id']
         self.__request(f'/position/{position_id}/action/approve', method='POST', expected_status=200)
         return resp_add
 
-    def invite_worker(self, position, worker, pay_by_project, your_scope = None, your_job_id = None):
+    def add_position_answers(self, position, answers):
+        position['classify_client_answers'] = {'answers': answers}
+        position_id = position['id']
+        resp_put = self.__request(f'/position/{position_id}', method='PUT', body=position)
+        return resp_put
+
+    def invite_worker(self, position, worker, pay_by_project, your_job_id = None):
         invite = {
             'position_id': position['id'],
             'start_date': position['start_date'],
@@ -118,17 +166,68 @@ class GreenLight():
         gl_job_id = resp['id']
 
         # add ext_id into the job
-        job = self.get_job(gl_job_id)
-        job['ext_id_scope'] = your_scope
-        job['ext_id'] = your_job_id
-        self.update_job(job)
+        if your_job_id:
+            job = self.get_job(gl_job_id)
+            job['ext_id_scope'] = self.scope()
+            job['ext_id'] = your_job_id
+            self.update_job(job)
 
         return job
 
+    def create_timesheet_with_shifts(self, shifts, your_timesheet_id = None, approve=False):
+        period_ending = self.__calculate_period_ending(shifts)
+        job_id = shifts[0]['job_id']
+        timesheet_id = self.__create_timesheet(job_id, period_ending, your_timesheet_id)
+        for shift in shifts:
+            self.__add_shift_to_timesheet(shift, timesheet_id)
+        self.__submit_timesheet(timesheet_id)
+        if approve:
+            self.__approve_timesheet(timesheet_id)
+        return timesheet_id
+
     ## private methods
-    def __fetch_endpoint(self, endpoint, id, scope = None):
-        queryparams = {'scope': scope} if scope else {}
-        record = self.__request(f'/{endpoint}/{id}', queryparams=queryparams)
+    def __create_timesheet(self, job_id, period_ending, your_timesheet_id):
+        timesheet = {
+            'job_id': job_id,
+            'period_ending': period_ending
+        }
+        if your_timesheet_id:
+            timesheet['ext_id'] = your_timesheet_id
+            timesheet['ext_id_scope'] = self.scope()
+
+        return self.__request('/timesheet', method='POST', body=timesheet)['id']
+    
+    def __submit_timesheet(self, timesheet_id):
+        return self.__request(f'/timesheet/{timesheet_id}/action/submit', method='POST', expected_status=200)
+
+    def __approve_timesheet(self, timesheet_id):
+        return self.__request(f'/timesheet/{timesheet_id}/action/approve', method='POST', expected_status=200)
+
+    def __add_shift_to_timesheet(self, shift, timesheet_id):
+        shift['timesheet_id'] = timesheet_id
+        return self.__request('/shift', method='POST', body=shift)['id']
+
+    def __calculate_period_ending(self, shifts):
+        def first_sunday_on_or_after(dt):
+            days_to_go = 6 - dt.weekday()
+            if days_to_go:
+                dt += timedelta(days_to_go)
+            return dt
+
+        last_time_in = max([shift['time_in'] for shift in shifts])
+        last_date = date.fromisoformat(last_time_in[:10])
+        timezone_offset = last_time_in[-6:]
+        period_ending_date = first_sunday_on_or_after(last_date)
+
+        # This sample application does not handle DST, so we cheat and set period_ending
+        # to 10:59pm Sunday rather than 11:59.  That way it's still within the week when DST is active.
+        period_ending = period_ending_date.isoformat() + "T22:59:59" + timezone_offset
+        return period_ending
+
+    def __fetch_endpoint(self, endpoint, id, scope = None, queryparams = {}):
+        allparams = queryparams.copy()
+        if scope: allparams['scope'] = scope
+        record = self.__request(f'/{endpoint}/{id}', queryparams=allparams)
 
         # in future this will return only relevant fields; for now it returns everything
         return record   
@@ -150,7 +249,7 @@ class GreenLight():
         headers = {'x-api-key': self.apikey}
         method = method.upper()
 
-        print(url, headers, method)
+        if VERBOSE: print(method, url)
 
         if ('ext_id' in body) and not ('ext_id_scope' in body and body['ext_id_scope']):
             body['ext_id_scope'] = self.scope()

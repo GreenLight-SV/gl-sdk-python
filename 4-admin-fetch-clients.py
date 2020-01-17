@@ -34,12 +34,15 @@ print(f'client for id {desired_client_id} is:')
 common.jsonprint(client)
 
 # c) fetch a client by your id
-your_client_id = clients[-1]['ext_id']       # for demonstration purposes
-your_id_scope = greenlight.scope()
-client = greenlight.get_client(your_client_id, scope=your_id_scope)
-print('\nExample c)')
-print(f'client for your id {your_client_id} is:')
-common.jsonprint(client)
+def has_ext_id(client): return ('ext_id' in client) and client['ext_id']
+clients_with_ext_id = list(filter(has_ext_id, clients))
+if len(clients_with_ext_id):
+    your_client_id = clients_with_ext_id[-1]['ext_id'] # for demonstration purposes; normally you already know this
+    your_id_scope = greenlight.scope()
+    client = greenlight.get_client(your_client_id, scope=your_id_scope)
+    print('\nExample c)')
+    print(f'client for your id {your_client_id} is:')
+    common.jsonprint(client)
 
 
 

@@ -2,7 +2,10 @@ import json
 import os
 import datetime
 from faker import Faker
+import random
 fake = Faker('en_US')
+
+DEBUG = True
 
 DEFAULT_COUNTRIES = {'US': 'active', 'GB': 'active'}
 DEFAULT_CURRENCIES = {'USD': 'active', 'GBP': 'active'}
@@ -27,7 +30,6 @@ def random_client(admin):
         'countries': admin['countries'],   # change to subset if client is limited to certain countries
         'currencies': admin['currencies'], # change to subset if client is limited to certain currencies
         'job_policies': DEFAULT_JOB_POLICIES,
-        'ext_id': fake.uuid4()             # put your client identifier here
     }
     return client
 
@@ -45,7 +47,7 @@ def random_project(client):
         'ext_id': your_id
     }
 
-def random_position(client):
+def random_position(client, classify_client_pref):
     pay_type = 'h'      # h for hourly, s for flat rate or by deliverable
     title = fake.job()
     department = fake.word(ext_word_list = DEPARTMENTS)
@@ -67,8 +69,8 @@ def random_position(client):
         'work_location_type': 'offsite',        # onsite or offsite
         # 'work_location_onsite_id': xxxxx,     # address id; required if onsite
         'work_timezone': 'America/New_York',
-        # 'hm_id': xxxxx,
-        'classify_client_pref': 'w2-only',
+        # 'hm_id': xxxxx,                       # greenlight ID of the hiring manager (person who approves timesheets)
+        'classify_client_pref': classify_client_pref,
         'pay_type': pay_type,
         'rate_currency': 'USD',
         'country': 'US',
@@ -92,6 +94,79 @@ def random_payrate(project_id):
     }
 
 def random_your_id(): return fake.uuid4()[:8]
+
+def random_shifts(job_id, project_id):
+    def make_shift(y, m, d, start, minutes):
+        start_time_iso = f"{y:04d}-{m:02d}-{d:02d}T{start}"
+        return {
+            'time_in': start_time_iso, 
+            'minutes': minutes,
+            'job_id': job_id,
+            'project_id': project_id
+        }
+
+    year = random.choice([2018, 2019, 2020])
+    month = random.randrange(12) + 1
+    start_day = random.randrange(25)
+
+    # we will create shifts for 8:30am-12:30pm and 1:00pm-5:30pm, in EST time (-0500), on three successive days
+    sample_morning_start_CST = '08:30:00-05:00'
+    sample_morning_minutes = 240 # 4 hours from 8:30-12:30
+    sample_afternoon_start_CST = '13:00:00-05:00'
+    sample_afternoon_minutes = 270 # 4.5 hours from 1:00-5:30
+    
+    mornings = [make_shift(year, month, day, sample_morning_start_CST, sample_morning_minutes) for day in range(start_day, start_day + 3)]
+    afternoons = [make_shift(year, month, day, sample_afternoon_start_CST, sample_afternoon_minutes) for day in range(start_day, start_day + 3)]
+    shifts = mornings + afternoons
+    return shifts
+
+def choose_existing_client(greenlight):
+    role_type = greenlight.role_type()
+
+    if role_type == 'client':
+        return greenlight.client
+
+    if role_type == 'admin':
+        clients = greenlight.get_admin_clients()
+        if len(clients) == 0:
+            print("There are no clients.  Add a client and try again.")
+            quit()
+        return clients[0]
+
+def choose_existing_job(greenlight):
+    role_type = greenlight.role_type()
+
+    if role_type == 'client':
+        client_id = greenlight.client['id']
+        selected_job = choose_client_job(greenlight, client_id)
+        if selected_job:
+            return selected_job 
+        else:
+            print("Client " + client_to_string(greenlight.client) + " has no active job.  Onboard & approve a worker then try again.")
+            quit()
+        return selected_job
+
+    if role_type == 'admin':
+        clients = greenlight.get_admin_clients()
+        if len(clients) == 0:
+            print("There are no clients.  Add a client and try again.")
+            quit()
+        for client in clients:
+            selected_job = choose_client_job(greenlight, client['id'])
+            if selected_job: return selected_job
+
+        print("There are no active jobs for any client.  Onboard & approve a worker then try again.")
+        quit()
+
+def choose_client_job(greenlight, client_id):
+    active_jobs = greenlight.get_client_active_jobs(client_id)
+    if len(active_jobs) == 0: return None
+    return active_jobs[0] # arbitrarily use the first job (which may vary, as list order is not guaranteed)
+
+def choose_existing_project(greenlight, job_id):
+    job_projects = greenlight.get_job_projects(job_id)
+    return job_projects[0]
+
 
 # for printing to console
 #
@@ -121,8 +196,13 @@ def position_to_string(position):
 def job_to_string(job):
     id = job['id']
     title = job['title']
-    return f"'{title}' id={id}"
+    if not 'user' in job:
+        return f"'{title}' job_id={id}"
+    user = job['user']
+    name = user['first_name'] + " " + user['last_name']
+    return f"{name} '{title}' job_id={id}"
 
 def client_to_string(client):
     return client['name']
+
 
