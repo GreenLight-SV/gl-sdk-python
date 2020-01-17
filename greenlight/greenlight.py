@@ -6,6 +6,8 @@ import sys
 import requests
 import json
 
+DEBUG = False
+
 DEFAULT_COUNTRIES = {'US': 'active', 'GB': 'active'}
 DEFAULT_CURRENCIES = {'USD': 'active', 'GBP': 'active'}
 DEFAULT_JOB_POLICIES = {
@@ -58,6 +60,7 @@ class GreenLight():
     def get_admin(self, id, scope = None): return self.__fetch_endpoint('admin', id, scope)
     def get_project(self, id, scope = None): return self.__fetch_endpoint('project', id, scope)
     def get_job(self, id, scope = None): return self.__fetch_endpoint('job', id, scope)
+    def get_job_extended(self, id): return self.__fetch_endpoint('job', id, None, {'extended': 'true'})
 
     def delete_client(self, id):
         resp = self.__request(f'/client/{id}', method='DELETE')
@@ -75,6 +78,18 @@ class GreenLight():
         full_clients = self.__request(f'/admin/{admin_id}/clients', queryparams={'status': 'current'})
         clients = list(map(client_fields, full_clients))
         return clients
+
+    def get_client_active_jobs(self, client_id):
+        def job_fields(job):
+            return {
+                'title': job['title'],
+                'id': job['id'],
+                'ext_id_scope': job['ext_id_scope'],
+                'ext_id': job['ext_id']
+            }
+        full_jobs = self.__request(f'/client/{client_id}/jobs', queryparams={'status': 'active'})
+        jobs = list(map(job_fields, full_jobs))
+        return jobs
 
     def create_client(self, client): 
         if (self.role_type() != 'admin'):
@@ -126,9 +141,10 @@ class GreenLight():
         return job
 
     ## private methods
-    def __fetch_endpoint(self, endpoint, id, scope = None):
-        queryparams = {'scope': scope} if scope else {}
-        record = self.__request(f'/{endpoint}/{id}', queryparams=queryparams)
+    def __fetch_endpoint(self, endpoint, id, scope = None, queryparams = {}):
+        allparams = queryparams.copy()
+        if scope: allparams['scope'] = scope
+        record = self.__request(f'/{endpoint}/{id}', queryparams=allparams)
 
         # in future this will return only relevant fields; for now it returns everything
         return record   
@@ -150,7 +166,7 @@ class GreenLight():
         headers = {'x-api-key': self.apikey}
         method = method.upper()
 
-        print(url, headers, method)
+        if DEBUG: print(method, url)
 
         if ('ext_id' in body) and not ('ext_id_scope' in body and body['ext_id_scope']):
             body['ext_id_scope'] = self.scope()

@@ -17,25 +17,8 @@ common.print_header(__file__)
 # real stuff starts here
 from greenlight import GreenLight, get_glapi_from_env
 greenlight = get_glapi_from_env()
-
-def select_client():
-    role_type = greenlight.role_type()
-
-    if role_type == 'client':
-        selected_client = greenlight.client
-        return selected_client
-
-    if role_type == 'admin':
-        clients = greenlight.get_admin_clients()
-        if len(clients) == 0:
-            print("I can't add a worker without at least one client.  Add client(s) and try again.")
-            quit()
-        selected_client = clients[0]  # arbitrarily use the first client (which may vary, as list order is not guaranteed)
-        return selected_client
-
-    raise ValueError(f'Unsupported role type {role_type}')
     
-###### Invite a worker: in 4 acts ######
+###### Invite a worker: in 5 acts ######
 
 # You can reference any record using its native (greenlight) id value (field 'id'),
 # or you can reference it using your own id value that you store as 'ext_id' at creation time.
@@ -45,7 +28,7 @@ def select_client():
 your_scope = greenlight.scope() 
 
 # Act I: Decide what client the worker should be invited to
-client = select_client()
+client = common.choose_existing_client(greenlight)
 print(f"  I. This worker will be invited for client " + common.client_to_string(client))
 
 # Act II: Determine what project (ie billing code) this assignment will be billed to.
@@ -91,6 +74,18 @@ pay_by_project = [common.random_payrate(gl_project_id)]
 job = greenlight.invite_worker(position, new_worker, pay_by_project, your_scope, your_job_id)
 print(" IV. Invited worker " + common.worker_to_string(new_worker) + " to job " + common.job_to_string(job))
 
+## Act V. Poll for background check status of worker
+
+# Onboarding information is retrieved from GET /job/{gl_id}?extended=true
+# This extended call does not support ext_id, so you need to request using greenlight identifier.
+# If you don't already have it, you can first fetch the job using your id and then again with native id.
+
+gl_job_id = greenlight.get_job(your_job_id, scope=your_scope)['id']
+job_extended = greenlight.get_job_extended(gl_job_id)
+onboarding = job_extended['onboarding']
+w2_path = onboarding['w2_path']
+background_check = w2_path['background_check']
+print("  V. Background check status is: ", background_check)
 
 
 

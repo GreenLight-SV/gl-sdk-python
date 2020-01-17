@@ -4,6 +4,8 @@ import datetime
 from faker import Faker
 fake = Faker('en_US')
 
+DEBUG = False
+
 DEFAULT_COUNTRIES = {'US': 'active', 'GB': 'active'}
 DEFAULT_CURRENCIES = {'USD': 'active', 'GBP': 'active'}
 DEFAULT_JOB_POLICIES = {
@@ -93,6 +95,38 @@ def random_payrate(project_id):
 
 def random_your_id(): return fake.uuid4()[:8]
 
+def choose_existing_job(greenlight):
+    role_type = greenlight.role_type()
+
+    if role_type == 'client':
+        client_id = greenlight.client['id']
+        selected_job = choose_client_job(greenlight, client_id)
+        if selected_job:
+            return selected_job 
+        else:
+            print("Client " + client_to_string(greenlight.client) + " has no active job.  Onboard & approve a worker then try again.")
+            quit()
+        return selected_job
+
+    if role_type == 'admin':
+        clients = greenlight.get_admin_clients()
+        if len(clients) == 0:
+            print("There are no clients.  Add a client and try again.")
+            quit()
+        for client in clients:
+            if DEBUG: print("Looking for jobs in client " + client_to_string(client))
+            selected_job = choose_client_job(greenlight, client['id'])
+            if selected_job: return selected_job
+
+        print("There are no active jobs for any client.  Onboard & approve a worker then try again.")
+        quit()
+
+def choose_client_job(greenlight, client_id):
+    active_jobs = greenlight.get_client_active_jobs(client_id)
+    if len(active_jobs) == 0: return None
+    return active_jobs[0] # arbitrarily use the first job (which may vary, as list order is not guaranteed)
+
+
 # for printing to console
 #
 def jsonprint(x):
@@ -121,7 +155,12 @@ def position_to_string(position):
 def job_to_string(job):
     id = job['id']
     title = job['title']
-    return f"'{title}' id={id}"
+    if not 'user' in job:
+        return f"'{title}' job_id={id}"
+    user = job['user']
+    name = user['first_name'] + " " + user['last_name']
+    return f"{name} '{title}' job_id={id}"
+
 
 def client_to_string(client):
     return client['name']
