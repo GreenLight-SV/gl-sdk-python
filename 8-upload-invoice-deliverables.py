@@ -37,11 +37,11 @@ print(f"  I. Deliverables will be added for " + common.job_to_string(job_ext) + 
 deliverables = common.random_deliverables(job['id'], project['id'])
 your_timesheet_id = common.random_your_id()
 timesheet_id = greenlight.create_timesheet_with_deliverables(deliverables, your_timesheet_id, approve=False)
-print(" II. Created timesheet " + timesheet_id + " with shifts - look for it in To Approve")
+print(" II. Created timesheet " + timesheet_id + " with deliverables and submitted it - look for it in To Approve")
 
 # Act II: Create a timesheet with deliverables on it, and leave it in "to-approve state"
 deliverables = common.random_deliverables(job['id'], project['id'])
 your_timesheet_id = common.random_your_id()
 timesheet_id = greenlight.create_timesheet_with_deliverables(deliverables, your_timesheet_id, approve=True)
-print("III. Created timesheet " + timesheet_id + " with shifts and approved it - look for it in Approved")
+print("III. Created timesheet " + timesheet_id + " with deliverables and approved it - look for it in Approved")
 

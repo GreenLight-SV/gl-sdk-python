@@ -7,7 +7,7 @@ import requests
 import json
 from datetime import date, timedelta
 
-VERBOSE = False
+VERBOSE = True
 
 DEFAULT_COUNTRIES = {'US': 'active', 'GB': 'active'}
 DEFAULT_CURRENCIES = {'USD': 'active', 'GBP': 'active'}
@@ -239,9 +239,23 @@ class GreenLight():
                 dt += timedelta(days_to_go)
             return dt
 
-        last_time_in = max([shift['time_in'] for shift in shifts])
-        last_date = date.fromisoformat(last_time_in[:10])
-        timezone_offset = last_time_in[-6:]
+        if len(shifts):
+            last_time_in = max([shift['time_in'] for shift in shifts])
+
+        if len(deliverables):        
+            last_deliverable = max([deliverable['date'] for deliverable in deliverables])
+
+        if len(shifts) and len(deliverables):
+            last_date_string = max([last_time_in, last_deliverable])
+        elif len(shifts):
+            last_date_string = last_time_in
+        elif len(deliverables):
+            last_date_string = last_deliverable
+        else:
+            return "2019-12-31T22:59:59"
+
+        last_date = date.fromisoformat(last_date_string[:10])
+        timezone_offset = last_time_in[-6:] if len(shifts) else "-05:00"
         period_ending_date = first_sunday_on_or_after(last_date)
 
         # This sample application does not handle DST, so we cheat and set period_ending

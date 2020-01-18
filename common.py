@@ -95,7 +95,21 @@ def random_payrate(project_id):
 def random_your_id(): return fake.uuid4()[:8]
 
 def random_deliverables(job_id, project_id):
-    return []
+    def make_deliverable(y, m, d, description, currency, amount):
+        date = f"{y:04d}-{m:02d}-{d:02d}"
+        return {
+            'date': date,
+            'description': description, 
+            'currency': currency,
+            'amount': amount,
+            'job_id': job_id,
+            'project_id': project_id
+        }
+    year = random.choice([2018, 2019, 2020])
+    month = random.randrange(12) + 1
+    day = random.randrange(25)
+
+    return [make_deliverable(year, month, day, f"Deliverable {i}", "USD", random.randrange(1000, 25000)) for i in range(3)]
 
 def random_shifts_expenses(job_id, project_id):
     def make_shift(y, m, d, start, minutes):
