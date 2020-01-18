@@ -174,12 +174,29 @@ class GreenLight():
 
         return job
 
-    def create_timesheet_with_shifts(self, shifts, your_timesheet_id = None, approve=False):
-        period_ending = self.__calculate_period_ending(shifts)
+    def create_timesheet_with_shifts_expenses(self, shifts_expenses, your_timesheet_id = None, approve=False):
+        shifts = shifts_expenses['shifts']
+        expenses = shifts_expenses['expenses']
+        period_ending = self.__calculate_period_ending(shifts=shifts)
         job_id = shifts[0]['job_id']
         timesheet_id = self.__create_timesheet(job_id, period_ending, your_timesheet_id)
         for shift in shifts:
             self.__add_shift_to_timesheet(shift, timesheet_id)
+        for expense in expenses:
+            self.__add_expense_to_timesheet(expense, timesheet_id)
+
+        self.__submit_timesheet(timesheet_id)
+        if approve:
+            self.__approve_timesheet(timesheet_id)
+        return timesheet_id
+
+    def create_timesheet_with_deliverables(self, deliverables, your_timesheet_id = None, approve=False):
+        period_ending = self.__calculate_period_ending(deliverables=deliverables)
+        job_id = deliverables[0]['job_id']
+        timesheet_id = self.__create_timesheet(job_id, period_ending, your_timesheet_id)
+        for deliverable in deliverables:
+            self.__add_deliverable_to_timesheet(deliverable, timesheet_id)
+
         self.__submit_timesheet(timesheet_id)
         if approve:
             self.__approve_timesheet(timesheet_id)
@@ -207,7 +224,15 @@ class GreenLight():
         shift['timesheet_id'] = timesheet_id
         return self.__request('/shift', method='POST', body=shift)['id']
 
-    def __calculate_period_ending(self, shifts):
+    def __add_expense_to_timesheet(self, expense, timesheet_id):
+        expense['timesheet_id'] = timesheet_id
+        return self.__request('/expense', method='POST', body=expense)['id']
+
+    def __add_deliverable_to_timesheet(self, deliverable, timesheet_id):
+        deliverable['timesheet_id'] = timesheet_id
+        return self.__request('/deliverable', method='POST', body=deliverable)['id']
+
+    def __calculate_period_ending(self, shifts=[], deliverables=[]):
         def first_sunday_on_or_after(dt):
             days_to_go = 6 - dt.weekday()
             if days_to_go:

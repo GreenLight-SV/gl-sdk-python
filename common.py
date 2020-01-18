@@ -21,7 +21,6 @@ DEPARTMENTS = [
 ]
 
 
-
 # create fake data
 
 def random_client(admin):
@@ -95,12 +94,26 @@ def random_payrate(project_id):
 
 def random_your_id(): return fake.uuid4()[:8]
 
-def random_shifts(job_id, project_id):
+def random_deliverables(job_id, project_id):
+    return []
+
+def random_shifts_expenses(job_id, project_id):
     def make_shift(y, m, d, start, minutes):
         start_time_iso = f"{y:04d}-{m:02d}-{d:02d}T{start}"
         return {
             'time_in': start_time_iso, 
             'minutes': minutes,
+            'job_id': job_id,
+            'project_id': project_id
+        }
+
+    def make_expense(y, m, d, description, currency, amount):
+        expense_date = f"{y:04d}-{m:02d}-{d:02d}"
+        return {
+            'expense_date': expense_date, 
+            'description': description,
+            'currency': currency,
+            'amount': amount,
             'job_id': job_id,
             'project_id': project_id
         }
@@ -118,7 +131,8 @@ def random_shifts(job_id, project_id):
     mornings = [make_shift(year, month, day, sample_morning_start_CST, sample_morning_minutes) for day in range(start_day, start_day + 3)]
     afternoons = [make_shift(year, month, day, sample_afternoon_start_CST, sample_afternoon_minutes) for day in range(start_day, start_day + 3)]
     shifts = mornings + afternoons
-    return shifts
+    expenses = [make_expense(year, month, start_day, f"Sample expense {i}", "USD", random.randrange(0, 500)) for i in range(4)]
+    return {'shifts': shifts, 'expenses': expenses}
 
 def choose_existing_client(greenlight):
     role_type = greenlight.role_type()
@@ -131,7 +145,7 @@ def choose_existing_client(greenlight):
         if len(clients) == 0:
             print("There are no clients.  Add a client and try again.")
             quit()
-        return clients[0]
+        return random.choice(clients)
 
 def choose_existing_job(greenlight):
     role_type = greenlight.role_type()
@@ -161,11 +175,11 @@ def choose_existing_job(greenlight):
 def choose_client_job(greenlight, client_id):
     active_jobs = greenlight.get_client_active_jobs(client_id)
     if len(active_jobs) == 0: return None
-    return active_jobs[0] # arbitrarily use the first job (which may vary, as list order is not guaranteed)
+    return random.choice(active_jobs) # arbitrarily use the first job (which may vary, as list order is not guaranteed)
 
 def choose_existing_project(greenlight, job_id):
     job_projects = greenlight.get_job_projects(job_id)
-    return job_projects[0]
+    return random.choice(job_projects)
 
 
 # for printing to console
