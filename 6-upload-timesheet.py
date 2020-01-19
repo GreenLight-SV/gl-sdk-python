@@ -31,14 +31,14 @@ job_ext = greenlight.get_job_extended(job['id'])
 print(f"  I. Hours will be added for " + common.job_to_string(job_ext) + " project=" + common.project_to_string(project))
 
 # Act II: Create a timesheet with some shifts on it, and leave it in "to-approve state"
-shifts = common.random_shifts(job['id'], project['id'])
+shifts_expenses = common.random_shifts_expenses(job['id'], project['id'])
 your_timesheet_id = common.random_your_id()
-timesheet_id = greenlight.create_timesheet_with_shifts(shifts, your_timesheet_id, approve=False)
-print(" II. Created timesheet " + timesheet_id + " with shifts - look for it in To Approve")
+timesheet_id = greenlight.create_timesheet_with_shifts_expenses(shifts_expenses, your_timesheet_id, approve=False)
+print(" II. Created timesheet " + timesheet_id + " with shifts/expenses and submitted it - look for it in To Approve")
 
 # Act II: Create a timesheet with some shifts on it, and leave it in "to-approve state"
-shifts = common.random_shifts(job['id'], project['id'])
+shifts_expenses = common.random_shifts_expenses(job['id'], project['id'])
 your_timesheet_id = common.random_your_id()
-timesheet_id = greenlight.create_timesheet_with_shifts(shifts, your_timesheet_id, approve=True)
-print("III. Created timesheet " + timesheet_id + " with shifts and approved it - look for it in Approved")
+timesheet_id = greenlight.create_timesheet_with_shifts_expenses(shifts_expenses, your_timesheet_id, approve=True)
+print("III. Created timesheet " + timesheet_id + " with shifts/expenses and approved it - look for it in Approved")
 

@@ -60,29 +60,16 @@ print(f"III. Created a position " + common.position_to_string(position))
 
 ## Act IV. Invite a worker to the position.
 new_worker = common.random_worker()
-
-your_worker_id = common.random_your_id()
-new_worker['ext_id_scope'] = your_scope
-new_worker['ext_id'] = your_worker_id
 your_job_id = common.random_your_id()
-
 pay_by_project = [common.random_payrate(gl_project_id)]
 
 job = greenlight.invite_worker(position, new_worker, pay_by_project, your_job_id)
-print(" IV. Invited worker " + common.worker_to_string(new_worker) + " to job " + common.job_to_string(job))
+print(" IV. Invited worker " + common.worker_to_string(new_worker['worker']) + " to job " + common.job_to_string(job))
 
 ## Act V. Poll for background check status of worker
 
-# Onboarding information is retrieved from GET /job/{gl_id}?extended=true
-# This extended call does not support ext_id, so you need to request using greenlight identifier.
-# If you don't already have it, you can first fetch the job using your id and then again with native id.
-
-gl_job_id = greenlight.get_job(your_job_id, scope=your_scope)['id']
-job_extended = greenlight.get_job_extended(gl_job_id)
-onboarding = job_extended['onboarding']
-w2_path = onboarding['w2_path']
-background_check = w2_path['background_check']
-print("  V. Background check status is: ", background_check)
+background_check_status = greenlight.get_background_check_status(your_job_id, scope=your_scope)
+print("  V. Background check status is: ", background_check_status)
 
 
 
