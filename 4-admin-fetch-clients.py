@@ -37,11 +37,9 @@ common.jsonprint(client)
 # c) fetch a client by your id
 def has_ext_id(client): return ('ext_id_scope' in client) and client['ext_id'] and client['ext_id_scope'] == your_scope
 clients_with_ext_id = [client for client in clients if has_ext_id(client)]
-print(clients_with_ext_id)
 if len(clients_with_ext_id):
     your_client_id = clients_with_ext_id[-1]['ext_id'] # for demonstration purposes; normally you already know this
     your_id_scope = greenlight.scope()
-    print(your_client_id, your_id_scope)
     client = greenlight.get_client(your_client_id, scope=your_id_scope)
     print('\nExample c)')
     print(f'client for your id {your_client_id} is:')
