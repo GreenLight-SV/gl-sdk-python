@@ -16,11 +16,12 @@ from greenlight import GreenLight, get_glapi_from_env
 greenlight = get_glapi_from_env()
 if greenlight.role_type() != 'admin':
     raise ValueError('This example can only be run with admin credentials')
+your_scope = greenlight.scope()
 
 # a) list all clients associated with the admin for this apikey
 clients = greenlight.get_admin_clients()
 print('\nExample a)')
-common.jsonprint(clients)
+common.jsonprint([client['name'] for client in clients])
 
 if len(clients) == 0:
     print('The rest of this example is not interesting if the client list is empty - create some clients and try again.')
@@ -34,7 +35,7 @@ print(f'client for id {desired_client_id} is:')
 common.jsonprint(client)
 
 # c) fetch a client by your id
-def has_ext_id(client): return ('ext_id' in client) and client['ext_id']
+def has_ext_id(client): return ('ext_id_scope' in client) and client['ext_id'] and client['ext_id_scope'] == your_scope
 clients_with_ext_id = [client for client in clients if has_ext_id(client)]
 if len(clients_with_ext_id):
     your_client_id = clients_with_ext_id[-1]['ext_id'] # for demonstration purposes; normally you already know this
