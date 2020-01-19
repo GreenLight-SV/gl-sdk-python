@@ -7,7 +7,7 @@ import requests
 import json
 from datetime import date, timedelta
 
-VERBOSE = True
+VERBOSE = False
 
 DEFAULT_COUNTRIES = {'US': 'active', 'GB': 'active'}
 DEFAULT_CURRENCIES = {'USD': 'active', 'GBP': 'active'}
@@ -77,7 +77,7 @@ class GreenLight():
             }
         admin_id = self.admin['id']
         full_clients = self.__request(f'/admin/{admin_id}/clients', queryparams={'status': 'current'})
-        clients = list(map(client_fields, full_clients))
+        clients = [client_fields(client) for client in full_clients]
         return clients
 
     def get_client_active_jobs(self, client_id):
@@ -89,7 +89,7 @@ class GreenLight():
                 'ext_id': job['ext_id']
             }
         full_jobs = self.__request(f'/client/{client_id}/jobs', queryparams={'status': 'active'})
-        jobs = list(map(job_fields, full_jobs))
+        jobs = [job_fields(job) for job in full_jobs]
         return jobs
 
     def get_questions_for_client(self, position_id = None):
@@ -104,13 +104,24 @@ class GreenLight():
         path = f'/question?form_type=job_classification_client&admin={admin_id}'
         if position_id: path += f'&position={position_id}'
         full_questions = self.__request(path)
-        questions = list(map(question_fields, full_questions))
+        questions = [question_fields(question) for question in full_questions]
 
         return questions
 
     def get_job_projects(self, job_id):
         full_projects = self.__request(f'/job/{job_id}/projects')
         return full_projects
+
+    def get_background_check_status(self, job_id, scope = None):
+        if scope:
+            gl_job_id = self.get_job(job_id, scope=scope)['id']
+        else:
+            gl_job_id = job_id
+        job_extended = self.get_job_extended(gl_job_id)
+        onboarding = job_extended['onboarding']
+        w2_path = onboarding['w2_path']
+        background_check_status = w2_path['background_check']
+        return background_check_status
 
     def create_client(self, client, your_client_id): 
         if (self.role_type() != 'admin'):
@@ -150,7 +161,9 @@ class GreenLight():
         resp_put = self.__request(f'/position/{position_id}', method='PUT', body=position)
         return resp_put
 
-    def invite_worker(self, position, worker, pay_by_project, your_job_id = None):
+    def invite_worker(self, position, worker_details, pay_by_project, your_job_id = None):
+        worker = worker_details['worker']
+        address = worker_details['address'] if 'address' in worker_details else None
         invite = {
             'position_id': position['id'],
             'start_date': position['start_date'],
@@ -164,15 +177,27 @@ class GreenLight():
 
         resp = self.__request('/job_invite', method='POST', body=invite)
         gl_job_id = resp['id']
+        job = self.get_job(gl_job_id)
 
-        # add ext_id into the job
+        # add ext_id into the job if provided
         if your_job_id:
-            job = self.get_job(gl_job_id)
             job['ext_id_scope'] = self.scope()
             job['ext_id'] = your_job_id
             self.update_job(job)
 
+        # persist contractor address if provided
+        if address:
+            contractor_id = job['contractor_id']
+            self.create_address(address, "contractor", contractor_id)
+
         return job
+
+    def create_address(self, address, ref_type, ref_id):
+        address['ref_type'] = ref_type
+        address['ref_id'] = ref_id 
+        address['kind'] = 'l'
+        address['name'] = 'Mailing'
+        return self.__request('/address', method='POST', body=address)['id']
 
     def create_timesheet_with_shifts_expenses(self, shifts_expenses, your_timesheet_id = None, approve=False):
         shifts = shifts_expenses['shifts']

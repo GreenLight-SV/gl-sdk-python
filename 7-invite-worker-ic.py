@@ -48,16 +48,12 @@ def create_ic_position(act_number, answer_value):
 
     ## Scene 4. Invite a worker to the position.
     new_worker = common.random_worker()
-
-    your_worker_id = common.random_your_id()
-    new_worker['ext_id_scope'] = your_scope
-    new_worker['ext_id'] = your_worker_id
     your_job_id = common.random_your_id()
 
     pay_by_project = [common.random_payrate(gl_project_id)]
 
     job = greenlight.invite_worker(position, new_worker, pay_by_project, your_job_id)
-    print(f"{act_number}.4 Invited worker " + common.worker_to_string(new_worker) + " to job " + common.job_to_string(job))
+    print(f"{act_number}.4 Invited worker " + common.worker_to_string(new_worker['worker']) + " to job " + common.job_to_string(job))
 
 
 your_scope = greenlight.scope() 

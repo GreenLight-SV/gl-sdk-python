@@ -83,7 +83,19 @@ def random_worker():
     }
     email = worker['first_name'] + worker ['last_name'] + '@' + 'contractmagician.com'
     worker['email'] = email
-    return worker
+
+    # optional fields
+    state = fake.state_abbr()
+    zip = fake.postcode_in_state(state_abbr = state)
+    address = {
+        'street': fake.street_address(),
+        'city': fake.city(),
+        'state': state,
+        'zip': zip,
+        'country': 'US'
+    }
+
+    return {'worker': worker, 'address': address}
 
 def random_payrate(project_id):
     return {
