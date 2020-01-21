@@ -14,6 +14,10 @@
 import common
 common.print_header(__file__)
 
+i_am_sure = input("are you sure? ")
+if not i_am_sure in "yY":
+    exit()
+
 # real stuff starts here
 from greenlight import GreenLight, get_glapi_from_env
 greenlight = get_glapi_from_env()
