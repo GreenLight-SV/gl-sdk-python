@@ -46,8 +46,8 @@ def random_project(client):
         'ext_id': your_id
     }
 
-def random_position(client, classify_client_pref):
-    pay_type = 'h'      # h for hourly, s for flat rate or by deliverable
+def random_position(client, classify_client_pref, hourly = True):
+    pay_type = 'h' if hourly else 's'     # h for hourly, s for flat rate or by deliverable
     title = fake.job()
     department = fake.word(ext_word_list = DEPARTMENTS)
     description = fake.paragraph()
@@ -97,11 +97,12 @@ def random_worker():
 
     return {'worker': worker, 'address': address}
 
-def random_payrate(project_id):
+def random_pay(project_id, hourly = True):
     return {
         'project_id': project_id, 
         'rate_currency': 'USD', 
-        'rate': fake.random_int(25, 150)
+        'rate': fake.random_int(25, 150) if hourly else None,
+        'project_value': (fake.random_int(1, 75) * 1000) if not hourly else None
     }
 
 def random_your_id(): return fake.uuid4()[:8]

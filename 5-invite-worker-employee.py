@@ -61,7 +61,7 @@ print(f"III. Created a position " + common.position_to_string(position))
 ## Act IV. Invite a worker to the position.
 new_worker = common.random_worker()
 your_job_id = common.random_your_id()
-pay_by_project = [common.random_payrate(gl_project_id)]
+pay_by_project = [common.random_pay(gl_project_id, hourly = True)]
 
 job = greenlight.invite_worker(position, new_worker, pay_by_project, your_job_id)
 print(" IV. Invited worker " + common.worker_to_string(new_worker['worker']) + " to job " + common.job_to_string(job))

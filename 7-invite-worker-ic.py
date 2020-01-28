@@ -22,7 +22,7 @@ greenlight = get_glapi_from_env()
 
 def create_ic_position(act_number, answer_value):
     ## Scene 1. Create a basic position, including job title, job description, work location.
-    new_position = common.random_position(client, 'ic-only')
+    new_position = common.random_position(client, 'ic-only', hourly = False)
     your_position_id = common.random_your_id()
 
     gl_position_id = greenlight.create_position(new_position, your_position_id)['id']
@@ -50,7 +50,7 @@ def create_ic_position(act_number, answer_value):
     new_worker = common.random_worker()
     your_job_id = common.random_your_id()
 
-    pay_by_project = [common.random_payrate(gl_project_id)]
+    pay_by_project = [common.random_pay(gl_project_id, hourly = False)]
 
     job = greenlight.invite_worker(position, new_worker, pay_by_project, your_job_id)
     print(f"{act_number}.4 Invited worker " + common.worker_to_string(new_worker['worker']) + " to job " + common.job_to_string(job))
