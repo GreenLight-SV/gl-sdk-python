@@ -58,7 +58,7 @@ new_position = common.random_position(
     classify_client_pref = 'w2-only', 
     hourly = True, 
     onsite_id = onsite_id,
-    hm_id = greenlight.profile['user_id']
+    hm_id = greenlight.profile['user_id']  # set the APIuser as the hiring manager 
 )
 
 your_position_id = common.random_your_id()
