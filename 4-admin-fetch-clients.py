@@ -45,5 +45,10 @@ if len(clients_with_ext_id):
     print(f'client for your id {your_client_id} is:')
     common.jsonprint(client)
 
+# d) fetch onsite address(es) for this client
+client_addresses = greenlight.get_client_addresses(client['id'])
+print('`nExample d)')
+print('Client address(es) is/are:')
+common.jsonprint(client_addresses)
 
 

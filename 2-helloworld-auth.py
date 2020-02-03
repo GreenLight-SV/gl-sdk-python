@@ -17,11 +17,12 @@ greenlight = get_glapi_from_env()
 if greenlight.profile:
     print("GreenLight API '" + greenlight.stage + "' is alive and authenticated successfully.")
     print("Your apikey is associated with: ")
-    print(f"  role={greenlight.profile['role']}")
+    print(f"  role ={greenlight.profile['role']}")
+    print(f"  user ={greenlight.profile['user_id']}")
     print(f"  admin={greenlight.admin['id']}")
     if (greenlight.client and 'name' in greenlight.client): 
         print(f"  client={greenlight.client['name']}") 
 else:
-    print("GreenLight object initialized, but its role is empty.  The user associated with your apikey may be misconfigured.  Contact support.")
+    print("GreenLight object initialized, but its role is empty.  The user associated with your apikey may be misconfigured.  Contact support@greenlight.ai.")
 
 

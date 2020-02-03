@@ -49,7 +49,17 @@ project = greenlight.get_project(id=your_project_id, scope=your_scope)
 print(f" II. Created new project " + common.project_to_string(project))
 
 ## Act III. Create a position, including job title, job description, work location.
-new_position = common.random_position(client, 'w2-only')
+
+# get an address id to make this an onsite position
+client_addresses = greenlight.get_client_addresses(client['id'])
+onsite_id = client_addresses[0]['id'] if len(client_addresses) else None
+new_position = common.random_position(
+    client, 
+    classify_client_pref = 'w2-only', 
+    hourly = True, 
+    onsite_id = onsite_id,
+    hm_id = greenlight.profile['user_id']  # set the APIuser as the hiring manager 
+)
 
 your_position_id = common.random_your_id()
 gl_position_id = greenlight.create_position(new_position, your_position_id)['id']

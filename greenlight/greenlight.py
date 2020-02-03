@@ -199,6 +199,9 @@ class GreenLight():
         address['name'] = 'Mailing'
         return self.__request('/address', method='POST', body=address)['id']
 
+    def get_client_addresses(self, client_id):
+        return self.__request(f'/client/{client_id}/addresses', method='GET')
+
     def create_timesheet_with_shifts_expenses(self, shifts_expenses, your_timesheet_id = None, approve=False):
         shifts = shifts_expenses['shifts']
         expenses = shifts_expenses['expenses']
@@ -346,7 +349,8 @@ class GreenLight():
         profile = {
             'role': full_profile['role'],
             'resource': full_profile['resource'],
-            'resource_id': full_profile['resource_id']
+            'resource_id': full_profile['resource_id'],
+            'user_id': full_profile['user_id'] if 'user_id' in full_profile else None
         }
 
         if (profile['resource'] == 'admin'):

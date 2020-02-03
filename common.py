@@ -46,7 +46,7 @@ def random_project(client):
         'ext_id': your_id
     }
 
-def random_position(client, classify_client_pref, hourly = True):
+def random_position(client, classify_client_pref, hourly = True, onsite_id = None, hm_id = None):
     pay_type = 'h' if hourly else 's'     # h for hourly, s for flat rate or by deliverable
     title = fake.job()
     department = fake.word(ext_word_list = DEPARTMENTS)
@@ -64,15 +64,26 @@ def random_position(client, classify_client_pref, hourly = True):
         'title': title,
         'description': description,
         'start_date': start_date,
-        'end_date': end_date,                   # optional
-        'work_location_type': 'offsite',        # onsite or offsite
-        # 'work_location_onsite_id': xxxxx,     # address id; required if onsite
+        'end_date': end_date,              # optional
+        'work_location_type': 'onsite' if onsite_id else 'offsite',
+        'work_location_onsite_id': onsite_id,
         'work_timezone': 'America/New_York',
-        # 'hm_id': xxxxx,                       # greenlight ID of the hiring manager (person who approves timesheets)
+        'hm_id': hm_id,                    # greenlight ID of the hiring manager (person who approves timesheets)
         'classify_client_pref': classify_client_pref,
         'pay_type': pay_type,
         'rate_currency': 'USD',
         'country': 'US',
+    }
+
+def random_address():
+    state = fake.state_abbr()
+    zip = fake.postcode_in_state(state_abbr = state)
+    return {
+        'street': fake.street_address(),
+        'city': fake.city(),
+        'state': state,
+        'zip': zip,
+        'country': 'US'
     }
 
 def random_worker():
@@ -85,16 +96,7 @@ def random_worker():
     worker['email'] = email
 
     # optional fields
-    state = fake.state_abbr()
-    zip = fake.postcode_in_state(state_abbr = state)
-    address = {
-        'street': fake.street_address(),
-        'city': fake.city(),
-        'state': state,
-        'zip': zip,
-        'country': 'US'
-    }
-
+    address = random_address()
     return {'worker': worker, 'address': address}
 
 def random_pay(project_id, hourly = True):
